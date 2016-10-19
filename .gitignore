@@ -1,3 +1,5 @@
 *.o
 CMakeFiles/
 bin/
+Makefile
+*.cmake
