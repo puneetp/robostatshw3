@@ -2,10 +2,14 @@ cmake_minimum_required(VERSION 2.8 FATAL_ERROR)
 project(Pfilter)
 include_directories(include)
 
-find_package(Eigen REQUIRED)
-include_directories(EIGEN3_INCLUDE_DIR)
+#set(CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake ${CMAKE_MODULE_PATH})
+#find_package(Eigen REQUIRED)
+include_directories("/usr/include/eigen3/")
 
 file(GLOB SOURCES "src/*.cpp" "src/*.c")
+
+SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
+
 add_executable (Pfilter ${SOURCES})
 
 

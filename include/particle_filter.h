@@ -3,8 +3,8 @@
 
 #include "particle.h"
 #include "data_structs.h"
-#include "bee_map.h"
-#include <Eigen/Dense>
+#include "bee-map.h"
+#include "Eigen/Dense"
 
 /** Defines the Particle Filter class */
 
@@ -45,7 +45,7 @@ private:
 	void InitParticles();
 
 	/** Updates the position of particle p given previous and current odom readings */ 
-	void MotionModel(Particle &p, Pose pos0, Pose pos1);
+	void MotionModel(Particle &p, Pose &pos0, Pose &pos1);
 
 	/** Computes the transformation matrix given x, y theta. Used by the motion model. */
 	Eigen::MatrixXd ComputeTransform(double x, double y, double theta);

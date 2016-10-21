@@ -1,7 +1,7 @@
 #include <random>
 #include "particle_filter.h"
 
-Eigen::MatrixXd::ParticleFilter
+Eigen::MatrixXd ParticleFilter::
 ComputeTransform(double x, double y, double theta) {
 	Eigen::MatrixXd T(3, 3);
 	T << 	
@@ -12,7 +12,7 @@ ComputeTransform(double x, double y, double theta) {
 	return T;
 }
 
-Eigen::MatrixXd::ParticleFilter
+Eigen::MatrixXd ParticleFilter::
 NoisyTransform(Eigen::MatrixXd T1, Eigen::MatrixXd T2) {
 	// Get displacements
 	Eigen::MatrixXd dT = T1.inverse() * T2;
@@ -31,10 +31,10 @@ NoisyTransform(Eigen::MatrixXd T1, Eigen::MatrixXd T2) {
 	dy = dist_y(generator);
 	dtheta = dist_theta(generator);
 
-	return ComputeTransform(dx, dy, theta);
+	return ComputeTransform(dx, dy, dtheta);
 }
 
-void::ParticleFilter
+void ParticleFilter::
 MotionModel(Particle &p, Pose &pos0, Pose &pos1) {
 	Eigen::Vector3d new_pose, old_pose;
 	Pose particle_pose = p.GetPose();

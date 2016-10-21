@@ -1,7 +1,7 @@
 #ifndef DATA_STRUCTS_H
 #define DATA_STRUCTS_H
 
-#include <Eigen/Dense>
+#include "Eigen/Dense"
 
 /** Useful data structures */
 

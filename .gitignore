@@ -1,6 +1,6 @@
 *.o
 CMakeFiles/
-bin/
+build/
 Makefile
 *.cmake
 CMakeCache.txt
