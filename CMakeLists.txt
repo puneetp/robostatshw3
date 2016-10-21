@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 2.8 FATAL_ERROR)
 project(Pfilter)
-file(GLOB_RECURSE PfilterFiles "main.cpp" "bee-map.c" "bee-map.h")
+file(GLOB_RECURSE PfilterFiles "src/main.cpp" "src/bee-map.c" "src/bee-map.h" "src/probabilityDensityFunction.cpp" "src/particle.cpp" )
 add_executable (Pfilter ${PfilterFiles})
 
 
