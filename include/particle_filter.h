@@ -4,6 +4,7 @@
 #include "particle.h"
 #include "data_structs.h"
 #include "bee_map.h"
+#include <Eigen/Dense>
 
 /** Defines the Particle Filter class */
 
