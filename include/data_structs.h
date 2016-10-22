@@ -12,13 +12,13 @@ typedef struct {
 
 // Laser range data
 typedef struct {
-	int rows, cols;
+	int rows;
 	Eigen::MatrixXd data;
 } LaserData;
 
 // Odometry data
 typedef struct {
-	int rows, cols;
+	int rows;
 	Eigen::MatrixXd data;
 } OdomData;
 

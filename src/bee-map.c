@@ -4,7 +4,7 @@ int read_beesoft_map(const char *mapName, map_type *map)
 {
   int x, y, count;
   float temp;
-  char line[256];
+  char line[1024];
   FILE *fp;
   
 

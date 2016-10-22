@@ -3,8 +3,11 @@
 
 #include "particle.h"
 #include "data_structs.h"
-#include "bee-map.h"
 #include "Eigen/Dense"
+
+extern "C" {
+	#include "bee-map.h"
+}
 
 /** Defines the Particle Filter class */
 
@@ -22,7 +25,7 @@ public:
 	}
 
 	/** Reads laser, odom and map data */
-	void ReadData(char *laser_file, char* odom_file, char *map_file);
+	void ReadData(char* data_file, char *map_file);
 
 	/** Particle filter algorithm.
 	* @return  trajectory: the robot's trajectory
@@ -33,7 +36,7 @@ private:
 	/* ****************** Member variables ********************************* */
 	int num_particles_;
 	std::vector<Particle> particles_;
-	map_type* map_;
+	map_type map_;
 	LaserData laser_data_;
 	OdomData odom_data_;
 	double motion_mean_, motion_sigma_;  			// gaussian parameters for motion model

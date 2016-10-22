@@ -12,14 +12,8 @@ int main (int argc , char ** argv )
 
 {
 
-	// stringstream map_filename;
-	
-	// // Set file name 
-	// map_filename << "../../hw3/data/map/wean.dat";
-
-	// map_type map=read_beesoft_map( map_filename.str() );
-
-	// getweight(particle ,   ,theta,lvector, returned_Weight)
+	ParticleFilter pf(1e4, 0, 0.1, 0, 0.1);
+	pf.ReadData("../data/robotdata1.log", "../data/wean.dat");
 
 	return (0);
 	
