@@ -6,11 +6,16 @@ include_directories(include)
 #find_package(Eigen REQUIRED)
 include_directories("/usr/include/eigen3/")
 
-file(GLOB SOURCES "src/*.cpp" "src/*.c")
+file(GLOB sources "src/*.cpp" "src/*.c")
+
+list(REMOVE_ITEM sources "${CMAKE_CURRENT_SOURCE_DIR}/src/getsensormodel.cpp" "${CMAKE_CURRENT_SOURCE_DIR}/src/probabilityDensityFunction.cpp")
+
+#Print out the value of source value of source.
+#message("${sources}")
 
 SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
 
-add_executable (Pfilter ${SOURCES})
+add_executable (Pfilter ${sources})
 
 
 #find_package(PCL 1.2 REQUIRED)

@@ -58,10 +58,17 @@ private:
 	*/
 	Eigen::Matrix3d NoisyTransform(Eigen::Matrix3d T1, Eigen::Matrix3d T2);
 
-	/** Updates the weight of particle p given laser readings.
-	* @param laser_idx row index of current measurement in laser data.
+
+	/**Sensor mode is core fuction which calculates the weights of the particles
+	* it takes in information of particle location , the map of the world and the laser reading at that place
+	* this allows it to caclulate the probability of getting a reading given robots position . Returns weight parameter
 	*/
-	void SensorModel(Particle &p, int laser_idx);
+	double SensorModel( Particle &p , int laser_index);	
+
+
+	/** create PDF for the sensor model*/
+	void ProbabilityDistributionFunction( int map_directed_obstacle_range[] ,int hop,int laser_index,double per_particle_sensor_probability_vector[] );
+
 
 	/** Returns the measurement probability for a single laser ray given position. Used by the sensor model.
 	* Constructs an appropriate probability distribution for the given sensing modality.
