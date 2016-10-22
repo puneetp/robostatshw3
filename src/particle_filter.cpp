@@ -8,9 +8,9 @@
 #define NUM_ODOM 			4
 #define NUM_LASER			187
 
-Eigen::MatrixXd ParticleFilter::
+Eigen::Matrix3d ParticleFilter::
 ComputeTransform(double x, double y, double theta) {
-	Eigen::MatrixXd T(3, 3);
+	Eigen::Matrix3d T;
 	T << 	
 		std::cos(theta), -std::sin(theta), x,
 		std::sin(theta), std::cos(theta), y,
@@ -19,10 +19,10 @@ ComputeTransform(double x, double y, double theta) {
 	return T;
 }
 
-Eigen::MatrixXd ParticleFilter::
-NoisyTransform(Eigen::MatrixXd T1, Eigen::MatrixXd T2) {
+Eigen::Matrix3d ParticleFilter::
+NoisyTransform(Eigen::Matrix3d T1, Eigen::Matrix3d T2) {
 	// Get displacements
-	Eigen::MatrixXd dT = T1.inverse() * T2;
+	Eigen::Matrix3d dT = T1.inverse() * T2;
 	double dx = dT(0, 2);
 	double dy = dT(1, 2);
 	double dtheta = std::atan2(-dT(0, 1), dT(0, 0));
@@ -42,17 +42,14 @@ NoisyTransform(Eigen::MatrixXd T1, Eigen::MatrixXd T2) {
 }
 
 void ParticleFilter::
-MotionModel(Particle &p, Pose &pos0, Pose &pos1) {
-	Eigen::Vector3d new_pose, old_pose;
-	Pose particle_pose = p.GetPose();
-	old_pose << particle_pose.x, particle_pose.y, particle_pose.theta;
+MotionModel(Particle &p, Eigen::Matrix3d T1, Eigen::Matrix3d T2) {
+	Eigen::Matrix3d new_T, old_T;
+	old_T << p.GetT();
 
-	new_pose = NoisyTransform(
-			ComputeTransform(pos0.x, pos0.y, pos0.theta),
-			ComputeTransform(pos1.x, pos1.y, pos1.theta)
-		) * old_pose;
+	new_T = NoisyTransform(T1, T2) * old_T;
 
-	p.SetPose(new_pose(0), new_pose(1), new_pose(2));
+	p.SetT(new_T);
+	p.SetPose(new_T(0, 2), new_T(1, 2), std::atan2(new_T(1, 0), new_T(0, 0)));
 }
 
 void ParticleFilter::
@@ -103,4 +100,32 @@ ReadData(char* data_file, char *map_file) {
 
 	std::cout << "Num odom entries: " << odom_data_.rows << "\n";
 	std::cout << "Num laser entries: " << laser_data_.rows << "\n";
+}
+
+void ParticleFilter::
+Filter(std::vector<Pose> &trajectory) {
+	int laser_idx(1), odom_idx(0);
+	Eigen::Matrix3d prev_T, curr_T;
+
+	// Initialize with first odom entry
+	prev_T = ComputeTransform(odom_data_.data(0, 0), odom_data_.data(0, 1), odom_data_.data(0, 2));
+	++odom_idx;
+
+	while(1) {
+		// Read log file. Let's stick with laser for now?
+		curr_T = ComputeTransform(laser_data_.data(laser_idx, 0), laser_data_.data(laser_idx, 1), laser_data_.data(laser_idx, 2));
+
+		// Apply motion and sensor model on all particles
+		for(int i = 0; i < num_particles_; ++i) {
+			// motion model
+			MotionModel(particles_[i], prev_T, curr_T);
+
+			// sensor model
+			// SensorModel(particles_[i], laser_idx);
+		}
+
+		// Importance sampling
+
+		laser_idx++;		
+	}
 }

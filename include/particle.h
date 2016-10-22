@@ -22,10 +22,15 @@ public:
 
 	double GetWeight();
 
+	Eigen::Matrix3d GetT();
+
+	void SetT(Eigen::Matrix3d T);
+
 private:
 	/* ****************** Member variables ********************************* */
 	Pose pose_;
 	double w_;
+	Eigen::Matrix3d T_;
 };
 
 #endif

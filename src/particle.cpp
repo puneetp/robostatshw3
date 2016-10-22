@@ -22,3 +22,13 @@ double Particle::
 GetWeight() {
 	return w_;
 }
+
+Eigen::Matrix3d Particle::
+GetT() {
+	return T_;
+}
+
+void Particle::
+SetT(Eigen::Matrix3d T) {
+	T_ << T;
+}

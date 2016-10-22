@@ -48,15 +48,15 @@ private:
 	void InitParticles();
 
 	/** Updates the position of particle p given previous and current odom readings */ 
-	void MotionModel(Particle &p, Pose &pos0, Pose &pos1);
+	void MotionModel(Particle &p, Eigen::Matrix3d T1, Eigen::Matrix3d T2);
 
 	/** Computes the transformation matrix given x, y theta. Used by the motion model. */
-	Eigen::MatrixXd ComputeTransform(double x, double y, double theta);
+	Eigen::Matrix3d ComputeTransform(double x, double y, double theta);
 
 	/** Returns a "noisy" transform matrix between two poses.
 	* Used by the motion model to update a particle's pose.
 	*/
-	Eigen::MatrixXd NoisyTransform(Eigen::MatrixXd T1, Eigen::MatrixXd T2);
+	Eigen::Matrix3d NoisyTransform(Eigen::Matrix3d T1, Eigen::Matrix3d T2);
 
 	/** Updates the weight of particle p given laser readings.
 	* @param laser_idx row index of current measurement in laser data.
