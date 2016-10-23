@@ -281,7 +281,7 @@ PreprocessMap() {
 	// iterate through the map and find unoccupied cells
 	for(int i = 0; i < map_.size_y; ++i) {
 		for(int j = 0; j < map_.size_x; ++j) {
-			if(map_.prob[i][j] > (1 - UNOCCUPIED_TOL)) {
+			if(map_.prob[i][j] > -0.1 && map_.prob[i][j] < UNOCCUPIED_TOL) {
 				// add to list
 				MapCell cell;
 				cell.row = i; cell.col = j;
