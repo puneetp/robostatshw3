@@ -12,7 +12,7 @@
 Eigen::Matrix3d ParticleFilter::
 ComputeTransform(double x, double y, double theta) {
 	Eigen::Matrix3d T;
-	T << 	
+	T <<
 		std::cos(theta), -std::sin(theta), x,
 		std::sin(theta), std::cos(theta), y,
 		0, 0, 1;
@@ -126,11 +126,37 @@ Filter(std::vector<Pose> &trajectory) {
 		}
 
 		// Importance sampling
-
-		laser_idx++;		
+		laser_idx++;
 	}
 }
 
+/* Regenerates the particles_ according to weights
+ */
+void ParticleFilter::ImportanceSampling(std::vector<Particle> &particles){
+	
+	// Compute vector of cumulative weights
+	const unsigned int num_particles = particles.size();
+	std::vector<double> cum_weights(num_particles+1, 0.0);
+	for (int i=1; i<num_particles; i++){
+		cum_weights[i] = cum_weights[i-1] + particles[i].GetWeight();
+	}
+
+	// Generate new particles
+	std::vector<Particle> new_particles;
+	std::default_random_engine generator(time(0));
+	std::uniform_real_distribution<float> distribution(0.0, cum_weights[num_particles]);
+	for (int i=0; i<num_particles; i++){
+		double random_no = distribution(generator);
+		auto lower = std::lower_bound(cum_weights.begin(), cum_weights.end(), random_no);
+		unsigned int index = lower - cum_weights.begin();
+		new_particles.push_back(particles[index]);
+	}
+
+	// Set weights to zero
+	
+	// Replace particles_ with new particles
+	particles = new_particles;
+}
 
 double ParticleFilter::SensorModel( Particle & p , int laser_index)
 
@@ -138,24 +164,24 @@ double ParticleFilter::SensorModel( Particle & p , int laser_index)
 	//laser_data_.row(laser_index)[]
 
 
-   //Check if you are in greay space , if yes return 0 weight 
+   //Check if you are in greay space , if yes return 0 weight
    //For the values X and Y and Tetha project Laser out into the MAP.
    //Read the MAP in these laser rays and get back values of first obstruction as per the map,
    //...rest weight out the gray values if they come before.
    //Use the value to a) Map Reading of lasters b) Laser reading to fetch value c) The value fetched call this in loop 180 times
    //Return the sum of log of all the probabilties ( CHECK again here for what calculation has to be done.)
-	 
+
 	int map_directed_obstacle_range[180];
 	double per_particle_sensor_probability_vector[180];
 
 	//Initializing
 	int search_increment=5;
 	double threshold_for_obstacle=0.7;
-	int hop=5;// How many lasers do we want to hop in search space 
-	std::fill_n(map_directed_obstacle_range,180,-1); // to -1 
-	
+	int hop=5;// How many lasers do we want to hop in search space
+	std::fill_n(map_directed_obstacle_range,180,-1); // to -1
 
-	//Running accross all laswers 
+
+	//Running accross all laswers
 	for ( int i ; i<180;i+hop)
 	{
 		int x=0;
@@ -169,20 +195,20 @@ double ParticleFilter::SensorModel( Particle & p , int laser_index)
 			x=std::floor(r*std::cos(p.GetPose().theta+offset_phi));
 
 			y=std::floor(r*std::sin(p.GetPose().theta+offset_phi));
-			
+
 			double obstacle_prob=map_.prob[x][y];
 
 			if (obstacle_prob > threshold_for_obstacle) // Note we check for certain threshold
 			{
 				map_directed_obstacle_range[i]=r;
-				break; // check this command 
+				break; // check this command
 			}
 			r=r+search_increment;
-		}	
+		}
 	}
 
 
-	// call the function to generate sensor probability per laser 	
+	// call the function to generate sensor probability per laser
     ProbabilityDistributionFunction( map_directed_obstacle_range, hop, laser_index, per_particle_sensor_probability_vector );
 
     double weight_log=0.0;
@@ -192,7 +218,7 @@ double ParticleFilter::SensorModel( Particle & p , int laser_index)
 		weight_log=std::log(per_particle_sensor_probability_vector[j])+weight_log;
 	}
 
-	double weight_value= std::exp(weight_log);  //actual weight 
+	double weight_value= std::exp(weight_log);  //actual weight
 
 	return weight_value;
 
@@ -209,14 +235,14 @@ void ParticleFilter::ProbabilityDistributionFunction( int map_directed_obstacle_
 	double min_probability_setting=0.02; //editable
 	double exp_value=0.0;
 	double normal_value=0.0;
-	
+
 	for( int i ; i < 180 ; i++ )
 	{
-		if (map_directed_obstacle_range[i]!=-1)			
+		if (map_directed_obstacle_range[i]!=-1)
 		{
 			//create normal distribution
 			laser_mean=map_directed_obstacle_range[i];
-				
+
 			// fetch reading at value
 			double fetch_laser_value_at_this_point = laser_data_.data.row(laser_index)[i]; // REVIEW this
 
@@ -224,11 +250,11 @@ void ParticleFilter::ProbabilityDistributionFunction( int map_directed_obstacle_
 			std::normal_distribution<double> distribution (laser_mean, laser_std);
 
 			// From Normal Distrubution of PDF
-			// = distribution(fetch_laser_value_at_this_point);	 
+			// = distribution(fetch_laser_value_at_this_point);
 			normal_value= (1/(laser_std*std::sqrt(2*M_PI)))*std::exp(-.5*std::pow( ((fetch_laser_value_at_this_point - laser_mean)/laser_std)  ,2))      ;
 
 			// From Exponential Function of PDF , since its falling , it e^(-x)
-			exp_value=std::exp(-1.0*fetch_laser_value_at_this_point);		
+			exp_value=std::exp(-1.0*fetch_laser_value_at_this_point);
 
 			// add some minor noise
 			double max_step1=std::max(exp_value,min_probability_setting);

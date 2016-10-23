@@ -16,7 +16,7 @@ public:
 	/** Constructor */
 	ParticleFilter(int num_particles, double motion_mean, double motion_sigma,
 		double laser_mean, double laser_sigma) {
-		
+
 		num_particles_ = num_particles;
 		motion_mean_ = motion_mean;
 		motion_sigma_ = motion_sigma;
@@ -32,7 +32,6 @@ public:
 	*/
 	void Filter(std::vector<Pose> &trajectory);
 
-private:
 	/* ****************** Member variables ********************************* */
 	int num_particles_;
 	std::vector<Particle> particles_;
@@ -47,7 +46,7 @@ private:
 	/** Initializes particles on the map */
 	void InitParticles();
 
-	/** Updates the position of particle p given previous and current odom readings */ 
+	/** Updates the position of particle p given previous and current odom readings */
 	void MotionModel(Particle &p, Eigen::Matrix3d T1, Eigen::Matrix3d T2);
 
 	/** Computes the transformation matrix given x, y theta. Used by the motion model. */
@@ -63,7 +62,7 @@ private:
 	* it takes in information of particle location , the map of the world and the laser reading at that place
 	* this allows it to caclulate the probability of getting a reading given robots position . Returns weight parameter
 	*/
-	double SensorModel( Particle &p , int laser_index);	
+	double SensorModel( Particle &p , int laser_index);
 
 
 	/** create PDF for the sensor model*/
@@ -83,6 +82,9 @@ private:
 
 	/** Implements importance sampling to re-sample particles */
 	void ResampleParticles();
+
+	/** Regenerates the particles_ according to weights */
+	void ImportanceSampling(std::vector<Particle> &particles);
 };
 
 #endif
