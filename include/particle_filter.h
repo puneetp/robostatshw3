@@ -34,6 +34,8 @@ public:
 
 	/************************ Test code ****************************************/
 	void DumpParticlesToFile();
+	void DumpOdomToFile();
+	void DumpLaserToFile();
 
 private:
 	/* ****************** Member variables ********************************* */

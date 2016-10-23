@@ -116,6 +116,8 @@ Filter(std::vector<Pose> &trajectory) {
 	InitParticles();
 
 	DumpParticlesToFile();
+	DumpOdomToFile();
+	DumpLaserToFile();
 
 	// // Initialize with first odom entry
 	// prev_T = ComputeTransform(odom_data_.data(0, 0), odom_data_.data(0, 1), odom_data_.data(0, 2));
@@ -299,6 +301,34 @@ DumpParticlesToFile() {
 		Pose p = particles_[i].GetPose();
 		fprintf(f, "%lf,%lf,%lf\n", p.x, p.y, p.theta);
 	}
+
+	fclose(f);
+}
+
+void ParticleFilter::
+DumpOdomToFile() {
+	FILE *f = fopen("odom.csv", "w");
+
+	for(int i = 0; i < odom_data_.rows; ++i) {
+		fprintf(f, "%lf,%lf,%lf,%lf\n", odom_data_.data(i, 0), odom_data_.data(i, 1),
+			odom_data_.data(i, 2), odom_data_.data(i, 3));
+	}
+
+	fclose(f);
+}
+
+void ParticleFilter::
+DumpLaserToFile() {
+	FILE *f = fopen("laser.csv", "w");
+
+	for(int i = 0; i < laser_data_.rows; ++i) {
+		for(int j = 0; j < NUM_LASER-1; ++j) {
+			fprintf(f, "%lf,", laser_data_.data(i, j));
+		}
+		fprintf(f, "%lf\n", laser_data_.data(i, NUM_LASER-1));
+	}
+
+	fclose(f);
 }
 
 
