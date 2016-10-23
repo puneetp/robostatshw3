@@ -92,7 +92,7 @@ public:
 	void ResampleParticles();
 
 	/** Regenerates the particles_ according to weights */
-	void ImportanceSampling(std::vector<Particle> &particles);
+	void ImportanceSampling(std::vector<Particle> &particles, int verbose=0);
 };
 
 #endif

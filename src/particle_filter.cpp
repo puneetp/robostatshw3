@@ -136,35 +136,46 @@ Filter(std::vector<Pose> &trajectory) {
 	// 	}
 
 	// 	// Importance sampling
-
+		// ImportanceSampling(particles_)
 	// 	laser_idx++;		
 	// }
 }
 
 /* Regenerates the particles_ according to weights
  */
-void ParticleFilter::ImportanceSampling(std::vector<Particle> &particles){
+void ParticleFilter::ImportanceSampling(std::vector<Particle> &particles , int verbose){
 	
 	// Compute vector of cumulative weights
 	const unsigned int num_particles = particles.size();
 	std::vector<double> cum_weights(num_particles+1, 0.0);
-	for (int i=1; i<num_particles; i++){
-		cum_weights[i] = cum_weights[i-1] + particles[i].GetWeight();
+	for (int i=1; i<num_particles+1; i++){
+		cum_weights[i] = cum_weights[i-1] + fabs(particles[i-1].GetWeight());
 	}
 
 	// Generate new particles
 	std::vector<Particle> new_particles;
 	std::default_random_engine generator(time(0));
 	std::uniform_real_distribution<float> distribution(0.0, cum_weights[num_particles]);
+	
+	if (verbose){
+		std::cout << "cum_weights = ";
+		for(auto it = cum_weights.begin(); it != cum_weights.end(); it++){
+			std::cout<< *it << ",";
+	    }
+		std::cout << std::endl;
+	}
+
 	for (int i=0; i<num_particles; i++){
 		double random_no = distribution(generator);
 		auto lower = std::lower_bound(cum_weights.begin(), cum_weights.end(), random_no);
-		unsigned int index = lower - cum_weights.begin();
+		unsigned int index = lower - cum_weights.begin() - 1; // -1 => caz weight has more 1 more element
 		new_particles.push_back(particles[index]);
+		if (verbose){
+			std::cout << "Random no= " << random_no << " index= " << index << std::endl;
+		}
 	}
+	std::cout << std::endl;
 
-	// Set weights to zero
-	
 	// Replace particles_ with new particles
 	particles = new_particles;
 }
