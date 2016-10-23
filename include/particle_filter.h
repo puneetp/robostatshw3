@@ -32,6 +32,9 @@ public:
 	*/
 	void Filter(std::vector<Pose> &trajectory);
 
+	/************************ Test code ****************************************/
+	void DumpParticlesToFile();
+
 private:
 	/* ****************** Member variables ********************************* */
 	int num_particles_;
