@@ -67,7 +67,7 @@ private:
 
 
 	/** create PDF for the sensor model*/
-	void ProbabilityDistributionFunction( int map_directed_obstacle_range[] ,int hop,int laser_index,double per_particle_sensor_probability_vector[] );
+	void Sensor_models_laser_PDF_vector( int map_directed_obstacle_range[] ,int hop,int laser_index,double per_particle_sensor_probability_vector[] );
 
 
 	/** Returns the measurement probability for a single laser ray given position. Used by the sensor model.
