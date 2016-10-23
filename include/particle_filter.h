@@ -32,6 +32,10 @@ public:
 	*/
 	void Filter(std::vector<Pose> &trajectory);
 
+
+	/************************ Test code ****************************************/
+	void DumpParticlesToFile();
+
 	/* ****************** Member variables ********************************* */
 	int num_particles_;
 	std::vector<Particle> particles_;
@@ -39,14 +43,18 @@ public:
 	LaserData laser_data_;
 	OdomData odom_data_;
 	double motion_mean_, motion_sigma_;  			// gaussian parameters for motion model
-	double laser_mean_, laser_sigma_;				// gaussian parameters for laser model
+	double laser_mean_, laser_sigma_;				// gaussian parameters for laser models
+	std::vector<MapCell> unoccupied_list_;			// List of map cells known to be empty with certainty 
 
 	/* ********************** Member functions ***************************** */
 
 	/** Initializes particles on the map */
 	void InitParticles();
 
-	/** Updates the position of particle p given previous and current odom readings */
+	/** Preprocesses the map. Builds a list of cells with occupancy probability = 0 **/
+	void PreprocessMap();
+
+	/** Updates the position of particle p given previous and current odom readings */ 
 	void MotionModel(Particle &p, Eigen::Matrix3d T1, Eigen::Matrix3d T2);
 
 	/** Computes the transformation matrix given x, y theta. Used by the motion model. */

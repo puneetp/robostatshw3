@@ -8,6 +8,7 @@
 
 #define NUM_ODOM 			4
 #define NUM_LASER			187
+#define UNOCCUPIED_TOL		1e-2
 
 Eigen::Matrix3d ParticleFilter::
 ComputeTransform(double x, double y, double theta) {
@@ -108,26 +109,36 @@ Filter(std::vector<Pose> &trajectory) {
 	int laser_idx(1), odom_idx(0);
 	Eigen::Matrix3d prev_T, curr_T;
 
-	// Initialize with first odom entry
-	prev_T = ComputeTransform(odom_data_.data(0, 0), odom_data_.data(0, 1), odom_data_.data(0, 2));
-	++odom_idx;
+	// Preprocess map
+	PreprocessMap();
 
-	while(1) {
-		// Read log file. Let's stick with laser for now?
-		curr_T = ComputeTransform(laser_data_.data(laser_idx, 0), laser_data_.data(laser_idx, 1), laser_data_.data(laser_idx, 2));
+	// Initialize particles
+	InitParticles();
 
-		// Apply motion and sensor model on all particles
-		for(int i = 0; i < num_particles_; ++i) {
-			// motion model
-			MotionModel(particles_[i], prev_T, curr_T);
+	DumpParticlesToFile();
 
-			// sensor model
-			// SensorModel(particles_[i], laser_idx);
-		}
+	// // Initialize with first odom entry
+	// prev_T = ComputeTransform(odom_data_.data(0, 0), odom_data_.data(0, 1), odom_data_.data(0, 2));
+	// ++odom_idx;
 
-		// Importance sampling
-		laser_idx++;
-	}
+
+	// while(1) {
+	// 	// Read log file. Let's stick with laser for now?
+	// 	curr_T = ComputeTransform(laser_data_.data(laser_idx, 0), laser_data_.data(laser_idx, 1), laser_data_.data(laser_idx, 2));
+
+	// 	// Apply motion and sensor model on all particles
+	// 	for(int i = 0; i < num_particles_; ++i) {
+	// 		// motion model
+	// 		MotionModel(particles_[i], prev_T, curr_T);
+
+	// 		// sensor model
+	// 		// SensorModel(particles_[i], laser_idx);
+	// 	}
+
+	// 	// Importance sampling
+
+	// 	laser_idx++;		
+	// }
 }
 
 /* Regenerates the particles_ according to weights
@@ -265,9 +276,58 @@ void ParticleFilter::ProbabilityDistributionFunction( int map_directed_obstacle_
 
 }
 
+void ParticleFilter::
+PreprocessMap() {
+	// iterate through the map and find unoccupied cells
+	for(int i = 0; i < map_.size_y; ++i) {
+		for(int j = 0; j < map_.size_x; ++j) {
+			if(map_.prob[i][j] > (1 - UNOCCUPIED_TOL)) {
+				// add to list
+				MapCell cell;
+				cell.row = i; cell.col = j;
+				unoccupied_list_.push_back(cell);
+			}			
+		}
+	}
+}
 
+void ParticleFilter::
+InitParticles() {
+	std::default_random_engine generator;
+	std::uniform_int_distribution<int> disc_distribution(0, unoccupied_list_.size()-1);
+	std::uniform_real_distribution<double> real_distribution(0.0, 2*M_PI);
 
+	int cell_idx;
+	double theta, x, y;
 
+	for(int i = 0; i < num_particles_; ++i) {
+		Particle p;
+		// randomly choose an unoccupied cell to place this particle in
+		cell_idx = disc_distribution(generator);
+
+		// randomly choose an orientation
+		theta = real_distribution(generator);
+
+		// Place the particle in the center of the cell (correct?)
+		x = unoccupied_list_[cell_idx].col * map_.resolution + map_.resolution/2;
+		y = unoccupied_list_[cell_idx].row * map_.resolution + map_.resolution/2;
+
+		p.SetPose(x, y, theta);
+		p.SetT(ComputeTransform(x, y, theta));
+
+		particles_.push_back(p);
+	}
+}
+
+void ParticleFilter::
+DumpParticlesToFile() {
+	FILE *f = fopen("particles.csv", "w");
+
+	for(int i = 0; i < num_particles_; ++i) {
+		Pose p = particles_[i].GetPose();
+		fprintf(f, "%lf,%lf,%lf\n", p.x, p.y, p.theta);
+	}
+}
 
 
 
