@@ -22,4 +22,9 @@ typedef struct {
 	Eigen::MatrixXd data;
 } OdomData;
 
+// Map cell
+typedef struct {
+	int row, col;
+} MapCell;
+
 #endif

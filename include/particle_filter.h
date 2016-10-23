@@ -16,7 +16,7 @@ public:
 	/** Constructor */
 	ParticleFilter(int num_particles, double motion_mean, double motion_sigma,
 		double laser_mean, double laser_sigma) {
-		
+
 		num_particles_ = num_particles;
 		motion_mean_ = motion_mean;
 		motion_sigma_ = motion_sigma;
@@ -32,7 +32,10 @@ public:
 	*/
 	void Filter(std::vector<Pose> &trajectory);
 
-private:
+
+	/************************ Test code ****************************************/
+	void DumpParticlesToFile();
+
 	/* ****************** Member variables ********************************* */
 	int num_particles_;
 	std::vector<Particle> particles_;
@@ -40,12 +43,16 @@ private:
 	LaserData laser_data_;
 	OdomData odom_data_;
 	double motion_mean_, motion_sigma_;  			// gaussian parameters for motion model
-	double laser_mean_, laser_sigma_;				// gaussian parameters for laser model
+	double laser_mean_, laser_sigma_;				// gaussian parameters for laser models
+	std::vector<MapCell> unoccupied_list_;			// List of map cells known to be empty with certainty 
 
 	/* ********************** Member functions ***************************** */
 
 	/** Initializes particles on the map */
 	void InitParticles();
+
+	/** Preprocesses the map. Builds a list of cells with occupancy probability = 0 **/
+	void PreprocessMap();
 
 	/** Updates the position of particle p given previous and current odom readings */ 
 	void MotionModel(Particle &p, Eigen::Matrix3d T1, Eigen::Matrix3d T2);
@@ -63,7 +70,7 @@ private:
 	* it takes in information of particle location , the map of the world and the laser reading at that place
 	* this allows it to caclulate the probability of getting a reading given robots position . Returns weight parameter
 	*/
-	double SensorModel( Particle &p , int laser_index);	
+	double SensorModel( Particle &p , int laser_index);
 
 
 	/** create PDF for the sensor model*/
@@ -83,6 +90,9 @@ private:
 
 	/** Implements importance sampling to re-sample particles */
 	void ResampleParticles();
+
+	/** Regenerates the particles_ according to weights */
+	void ImportanceSampling(std::vector<Particle> &particles);
 };
 
 #endif

@@ -12,7 +12,7 @@ typedef struct {
 	float **cells;
 
 	// map has 767 elements by 808 enteries
-	int prob[810][810];
+	double prob[810][810];
 } map_type;
 
 //void new_hornetsoft_map(map_type *map, int size_x, int size_y);
