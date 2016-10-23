@@ -8,6 +8,7 @@
 
 #define NUM_ODOM 			4
 #define NUM_LASER			187
+#define UNOCCUPIED_TOL		1e-2
 
 Eigen::Matrix3d ParticleFilter::
 ComputeTransform(double x, double y, double theta) {
@@ -107,6 +108,8 @@ void ParticleFilter::
 Filter(std::vector<Pose> &trajectory) {
 	int laser_idx(1), odom_idx(0);
 	Eigen::Matrix3d prev_T, curr_T;
+
+	PreprocessMap();
 
 	// Initialize with first odom entry
 	prev_T = ComputeTransform(odom_data_.data(0, 0), odom_data_.data(0, 1), odom_data_.data(0, 2));
@@ -239,7 +242,25 @@ void ParticleFilter::ProbabilityDistributionFunction( int map_directed_obstacle_
 
 }
 
+void ParticleFilter::
+PreprocessMap() {
+	// iterate through the map and find unoccupied cells
+	for(int i = 0; i < map_.size_y; ++i) {
+		for(int j = 0; j < map_.size_x; ++j) {
+			if(map_.prob[i][j] > (1 - UNOCCUPIED_TOL)) {
+				// add to list
+				MapCell cell;
+				cell.row = i; cell.col = j;
+				unoccupied_list_.push_back(cell);
+			}			
+		}
+	}
+}
 
+void ParticleFilter::
+InitParticles() {
+
+}
 
 
 
