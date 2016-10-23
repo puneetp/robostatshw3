@@ -13,7 +13,6 @@ int main (int argc , char ** argv )
 
 {
 	 std::vector<Pose> traj;
-
 	 ParticleFilter pf(1e4, 0, 0.1, 0, 0.1);
 	 pf.ReadData("../data/robotdata1.log", "../data/wean.dat");
 	 pf.Filter(traj);

@@ -16,7 +16,7 @@ public:
 	/** Constructor */
 	ParticleFilter(int num_particles, double motion_mean, double motion_sigma,
 		double laser_mean, double laser_sigma) {
-		
+
 		num_particles_ = num_particles;
 		motion_mean_ = motion_mean;
 		motion_sigma_ = motion_sigma;
@@ -32,12 +32,12 @@ public:
 	*/
 	void Filter(std::vector<Pose> &trajectory);
 
+
 	/************************ Test code ****************************************/
 	void DumpParticlesToFile();
 	void DumpOdomToFile();
 	void DumpLaserToFile();
 
-private:
 	/* ****************** Member variables ********************************* */
 	int num_particles_;
 	std::vector<Particle> particles_;
@@ -72,11 +72,11 @@ private:
 	* it takes in information of particle location , the map of the world and the laser reading at that place
 	* this allows it to caclulate the probability of getting a reading given robots position . Returns weight parameter
 	*/
-	double SensorModel( Particle &p , int laser_index);	
+	double SensorModel( Particle &p , int laser_index);
 
 
 	/** create PDF for the sensor model*/
-	void ProbabilityDistributionFunction( int map_directed_obstacle_range[] ,int hop,int laser_index,double per_particle_sensor_probability_vector[] );
+	void Sensor_models_laser_PDF_vector( int map_directed_obstacle_range[] ,int hop,int laser_index,double per_particle_sensor_probability_vector[] );
 
 
 	/** Returns the measurement probability for a single laser ray given position. Used by the sensor model.
@@ -92,6 +92,9 @@ private:
 
 	/** Implements importance sampling to re-sample particles */
 	void ResampleParticles();
+
+	/** Regenerates the particles_ according to weights */
+	void ImportanceSampling(std::vector<Particle> &particles);
 };
 
 #endif
