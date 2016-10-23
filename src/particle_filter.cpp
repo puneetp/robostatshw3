@@ -8,12 +8,8 @@
 
 #define NUM_ODOM 			4
 #define NUM_LASER			187
-<<<<<<< HEAD
 #define LASER_POD_FORWARD_OFFSET   25 // This is in 
-
-=======
 #define UNOCCUPIED_TOL		1e-2
->>>>>>> ab9948e2e82a50f07098a0950b432b2428b44ee8
 
 Eigen::Matrix3d ParticleFilter::
 ComputeTransform(double x, double y, double theta) {
