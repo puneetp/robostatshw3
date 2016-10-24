@@ -24,14 +24,16 @@ ComputeTransform(double x, double y, double theta) {
 
 Eigen::Matrix3d ParticleFilter::
 NoisyTransform(Eigen::Matrix3d T1, Eigen::Matrix3d T2) {
+	// return T2 * T1.inverse();
+
 	// Get displacements
-	Eigen::Matrix3d dT = T1.inverse() * T2;
+	Eigen::Matrix3d dT = T2 * T1.inverse();
 	double dx = dT(0, 2);
 	double dy = dT(1, 2);
 	double dtheta = std::atan2(-dT(0, 1), dT(0, 0));
 
 	// Add some noise
-	std::default_random_engine generator;
+	std::default_random_engine generator(time(0));
 	std::normal_distribution<double> dist_x(dx, motion_sigma_);
 	std::normal_distribution<double> dist_y(dy, motion_sigma_);
 	std::normal_distribution<double> dist_theta(dtheta, motion_sigma_);
@@ -50,6 +52,9 @@ MotionModel(Particle &p, Eigen::Matrix3d T1, Eigen::Matrix3d T2) {
 	old_T << p.GetT();
 
 	new_T = NoisyTransform(T1, T2) * old_T;
+
+	std::cout << "noisy: " << NoisyTransform(T1, T2) << "\n";
+	std::cout << "oldT: " << old_T << "\n";
 
 	p.SetT(new_T);
 	p.SetPose(new_T(0, 2), new_T(1, 2), std::atan2(new_T(1, 0), new_T(0, 0)));
@@ -338,6 +343,8 @@ InitParticles() {
 	}
 }
 
+
+/******************** test code *****************************************/
 void ParticleFilter::
 DumpParticlesToFile() {
 	FILE *f = fopen("particles.csv", "w");
@@ -376,6 +383,31 @@ DumpLaserToFile() {
 	fclose(f);
 }
 
+void ParticleFilter::
+TestMotionModel() {
+	FILE *f = fopen("particle_traj.csv", "w");
+	Pose pose;
+	int odom_idx = 0;
+	Eigen::Matrix3d curr_T, prev_T;
 
+	// Initialize particle to the first odom reading
+	Particle p;
+	p.SetPose(odom_data_.data(0, 0), odom_data_.data(0, 1), odom_data_.data(0, 2));
+	p.SetT(ComputeTransform(odom_data_.data(0, 0), odom_data_.data(0, 1), odom_data_.data(0, 2)));
 
+	prev_T = ComputeTransform(odom_data_.data(0, 0), odom_data_.data(0, 1), odom_data_.data(0, 2));
+
+	++odom_idx;
+
+	while(odom_idx <= odom_data_.rows-1) {
+		curr_T = ComputeTransform(odom_data_.data(odom_idx, 0), odom_data_.data(odom_idx, 1), odom_data_.data(odom_idx, 2));
+		MotionModel(p, prev_T, curr_T);
+		pose = p.GetPose();
+		fprintf(f, "%lf,%lf,%lf\n", pose.x, pose.y, pose.theta);
+		prev_T << curr_T;
+		++odom_idx;
+	}
+
+	fclose(f);
+}
 

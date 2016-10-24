@@ -37,6 +37,7 @@ public:
 	void DumpParticlesToFile();
 	void DumpOdomToFile();
 	void DumpLaserToFile();
+	void TestMotionModel();
 
 	/* ****************** Member variables ********************************* */
 	int num_particles_;

@@ -13,9 +13,10 @@ int main (int argc , char ** argv )
 
 {
 	 std::vector<Pose> traj;
-	 ParticleFilter pf(1e4, 0, 0.1, 0, 0.1);
+	 ParticleFilter pf(1e4, 0, 1e-4, 0, 0.000001);
 	 pf.ReadData("../data/robotdata1.log", "../data/wean.dat");
-	 pf.Filter(traj);
+	 // pf.Filter(traj);
+	 pf.TestMotionModel();
 
 	 return (0);
 }
