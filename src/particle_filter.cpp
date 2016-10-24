@@ -5,11 +5,26 @@
 #include <iostream>
 #include "particle_filter.h"
 #include "math.h"
+#include <opencv2/core/core.hpp>
+#include <opencv2/highgui/highgui.hpp>
+#include <cv.h>
 
 #define NUM_ODOM 			4
 #define NUM_LASER			187
 #define LASER_POD_FORWARD_OFFSET   25 // This is in 
 #define UNOCCUPIED_TOL		1e-2
+
+/** Constructor */
+ParticleFilter::
+ParticleFilter(int num_particles, double motion_mean, double motion_sigma,
+	double laser_mean, double laser_sigma) {
+	num_particles_ = num_particles;
+	motion_mean_ = motion_mean;
+	motion_sigma_ = motion_sigma;
+	laser_mean_ = laser_mean;
+	laser_sigma_ = laser_sigma;
+	cv::namedWindow("ParticleFilter", CV_WINDOW_NORMAL);
+}
 
 Eigen::Matrix3d ParticleFilter::
 ComputeTransform(double x, double y, double theta) {
@@ -52,9 +67,6 @@ MotionModel(Particle &p, Eigen::Matrix3d T1, Eigen::Matrix3d T2) {
 	old_T << p.GetT();
 
 	new_T = NoisyTransform(T1, T2) * old_T;
-
-	std::cout << "noisy: " << NoisyTransform(T1, T2) << "\n";
-	std::cout << "oldT: " << old_T << "\n";
 
 	p.SetT(new_T);
 	p.SetPose(new_T(0, 2), new_T(1, 2), std::atan2(new_T(1, 0), new_T(0, 0)));
@@ -146,35 +158,48 @@ Filter(std::vector<Pose> &trajectory) {
 	// 	}
 
 	// 	// Importance sampling
-
+		// ImportanceSampling(particles_)
 	// 	laser_idx++;		
+	//  pf.UpdateDisplay();
 	// }
+
 }
 
 /* Regenerates the particles_ according to weights
  */
-void ParticleFilter::ImportanceSampling(std::vector<Particle> &particles){
+void ParticleFilter::ImportanceSampling(std::vector<Particle> &particles , int verbose){
 	
 	// Compute vector of cumulative weights
 	const unsigned int num_particles = particles.size();
 	std::vector<double> cum_weights(num_particles+1, 0.0);
-	for (int i=1; i<num_particles; i++){
-		cum_weights[i] = cum_weights[i-1] + particles[i].GetWeight();
+	for (int i=1; i<num_particles+1; i++){
+		cum_weights[i] = cum_weights[i-1] + fabs(particles[i-1].GetWeight());
 	}
 
 	// Generate new particles
 	std::vector<Particle> new_particles;
 	std::default_random_engine generator(time(0));
 	std::uniform_real_distribution<float> distribution(0.0, cum_weights[num_particles]);
+	
+	if (verbose){
+		std::cout << "cum_weights = ";
+		for(auto it = cum_weights.begin(); it != cum_weights.end(); it++){
+			std::cout<< *it << ",";
+	    }
+		std::cout << std::endl;
+	}
+
 	for (int i=0; i<num_particles; i++){
 		double random_no = distribution(generator);
 		auto lower = std::lower_bound(cum_weights.begin(), cum_weights.end(), random_no);
-		unsigned int index = lower - cum_weights.begin();
+		unsigned int index = lower - cum_weights.begin() - 1; // -1 => caz weight has more 1 more element
 		new_particles.push_back(particles[index]);
+		if (verbose){
+			std::cout << "Random no= " << random_no << " index= " << index << std::endl;
+		}
 	}
+	std::cout << std::endl;
 
-	// Set weights to zero
-	
 	// Replace particles_ with new particles
 	particles = new_particles;
 }
@@ -411,3 +436,22 @@ TestMotionModel() {
 	fclose(f);
 }
 
+/** Updates the visualization of the map */
+void ParticleFilter::UpdateDisplay(){
+	
+	// Convert Map to Mat (RGB)
+	cv::Mat map_mat = cv::Mat(map_.size_y, map_.size_x, CV_64F, map_.prob);
+	cv::Mat map_rgb_mat = cv::Mat(map_.size_y, map_.size_x, CV_8UC3);
+	map_mat.convertTo(map_mat, CV_32F);
+	cv::cvtColor(map_mat, map_rgb_mat, CV_GRAY2RGB, 3);  		
+
+	// Draw Particles
+	for (int i=0; i<particles_.size(); i++){
+		circle(map_rgb_mat, cv::Point(particles_[i].GetPose().x/10, 
+			particles_[i].GetPose().y/10), 0.5, cv::Scalar(0,255,0), 0.5);
+	}
+
+	// Display Image
+	cv::imshow("ParticleFilter", map_rgb_mat);
+	cv::waitKey(1);
+}

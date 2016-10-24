@@ -15,14 +15,7 @@ class ParticleFilter {
 public:
 	/** Constructor */
 	ParticleFilter(int num_particles, double motion_mean, double motion_sigma,
-		double laser_mean, double laser_sigma) {
-
-		num_particles_ = num_particles;
-		motion_mean_ = motion_mean;
-		motion_sigma_ = motion_sigma;
-		laser_mean_ = laser_mean;
-		laser_sigma_ = laser_sigma;
-	}
+		double laser_mean, double laser_sigma);
 
 	/** Reads laser, odom and map data */
 	void ReadData(char* data_file, char *map_file);
@@ -95,7 +88,10 @@ public:
 	void ResampleParticles();
 
 	/** Regenerates the particles_ according to weights */
-	void ImportanceSampling(std::vector<Particle> &particles);
+	void ImportanceSampling(std::vector<Particle> &particles, int verbose=0);
+
+	/** Updates the visualization of the map */
+	void UpdateDisplay();
 };
 
 #endif
