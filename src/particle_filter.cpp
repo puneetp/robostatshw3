@@ -7,9 +7,11 @@
 #include "math.h"
 
 #define NUM_ODOM 			4
+#define START_LASER_INDEX   7
 #define NUM_LASER			187
 #define LASER_POD_FORWARD_OFFSET   25 // This is in 
 #define UNOCCUPIED_TOL		1e-2
+
 
 Eigen::Matrix3d ParticleFilter::
 ComputeTransform(double x, double y, double theta) {
@@ -118,30 +120,29 @@ Filter(std::vector<Pose> &trajectory) {
 	// Initialize particles
 	InitParticles();
 
-	DumpParticlesToFile();
+	//DumpParticlesToFile();
 
 	// // Initialize with first odom entry
 	// prev_T = ComputeTransform(odom_data_.data(0, 0), odom_data_.data(0, 1), odom_data_.data(0, 2));
 	// ++odom_idx;
 
 
-	// while(1) {
+	 while(laser_idx<2)
+	  {
 	// 	// Read log file. Let's stick with laser for now?
 	// 	curr_T = ComputeTransform(laser_data_.data(laser_idx, 0), laser_data_.data(laser_idx, 1), laser_data_.data(laser_idx, 2));
-
 	// 	// Apply motion and sensor model on all particles
-	// 	for(int i = 0; i < num_particles_; ++i) {
+	 	for(int i = 0; i < num_particles_; ++i) {
 	// 		// motion model
 	// 		MotionModel(particles_[i], prev_T, curr_T);
 
 	// 		// sensor model
-	// 		// SensorModel(particles_[i], laser_idx);
-	// 	}
-
+	 		SensorModel(particles_[i], laser_idx);
+	 		//std::cout << " num_particles_ i=" <<i<<std::endl;
+	 	}
 	// 	// Importance sampling
-
-	// 	laser_idx++;		
-	// }
+	 	laser_idx++;		
+	 }
 }
 
 /* Regenerates the particles_ according to weights
@@ -176,76 +177,102 @@ double ParticleFilter::SensorModel( Particle & p , int laser_row_index)
 
 {
 	//laser_data_.row(laser_row_index)[]
-
-
-   //Check if you are in greay space , if yes return 0 weight
+   //Check if you are in gray space , if yes return 0 weight
    //For the values X and Y and Tetha project Laser out into the MAP.
    //Read the MAP in these laser rays and get back values of first obstruction as per the map,
    //...rest weight out the gray values if they come before.
    //Use the value to a) Map Reading of lasters b) Laser reading to fetch value c) The value fetched call this in loop NUM_LASER times
    //Return the sum of log of all the probabilties ( CHECK again here for what calculation has to be done.)
 	 
-	int map_directed_obstacle_range[NUM_LASER];
-	double per_particle_sensor_probability_vector[NUM_LASER];
+	int map_directed_obstacle_range[NUM_LASER-START_LASER_INDEX];
+	
 
 	//Initializing
 	int search_increment=5;
 	double threshold_for_obstacle=0.7;
 
-	int hop=5;// How many lasers do we want to hop in search space 
-	std::fill_n(map_directed_obstacle_range,NUM_LASER,-1); // to -1 
-	
+	int hop=1;// How many lasers do we want to hop in search space Minimum is one
 
-	//Running accross all lasers 
-	for ( int i ; i<NUM_LASER;i+hop)
+	//initatied to -1 , if -1 don't use the value 
+	std::fill_n(map_directed_obstacle_range,NUM_LASER-START_LASER_INDEX,-1); // to -1 
+
+	//Running accross all lasers 	
+	//for ( int i =0 ; i<NUM_LASER;i=i+hop)
+	for ( int i2 =0 ; i2<NUM_LASER-START_LASER_INDEX ;i2=i2+hop) //NUM_LASER-START_LASER_INDEX
 	{
-		int x=0;
-		int y=0;
+		int x=1;
+		int y=1;
 		int r=0;
-		while ( ((x<8000)&&(y<8000))  &&  ((x>0)&&(y>0))  )  
+		bool reached(false);
+		while (  ((x<map_.size_x) && (y<map_.size_y))  &&  (((x>0)&&(y>0)) && !reached)  )  
 		{
+			//std::cout << " value of pi" <<M_PI << std::endl;
 
-			double increment_scan_angle_phi = i*M_PI/180.0; // Angle of laser from start
+			double increment_scan_angle_phi = i2*M_PI/180.0; // Angle of laser from start
 
 			double start_offset_laser = -90.0*M_PI/180.0; // starting point -90 degree
+
+			//std::cout << " value of increment_scan_angle_phi is= "<<increment_scan_angle_phi<< " value of start_offset_laser is " <<start_offset_laser << std::endl;
 
 			double robot_theta= p.GetPose().theta;		
 
 			double rx=r*std::cos(robot_theta + increment_scan_angle_phi + start_offset_laser);
 
 			double ry=r*std::sin(robot_theta + increment_scan_angle_phi+start_offset_laser);
+
+			//std::cout << " value of robot_theta + increment_scan_angle_phi+start_offset_laser = "<<robot_theta + increment_scan_angle_phi+start_offset_laser<< std::endl;
 			
 			double laser_x_offset = LASER_POD_FORWARD_OFFSET*std::cos(robot_theta);
 
 			double laser_y_offset = LASER_POD_FORWARD_OFFSET*std::sin(robot_theta);
 
-			int true_x= std::floor(p.GetPose().x + rx + laser_x_offset);
+			x= std::floor(p.GetPose().x/10.00 + rx + laser_x_offset);
 
-			int true_y= std::floor(p.GetPose().y + ry + laser_y_offset);
+			y= std::floor(p.GetPose().y/10.00 + ry + laser_y_offset);
 
-			double obstacle_prob=map_.prob[true_x][true_y];						
 
-			if (obstacle_prob > threshold_for_obstacle) // Note we check for certain threshold
+			if ( ((x<map_.size_x) && (y<map_.size_y))  &&  ((x>0)&&(y>0)) )
 			{
-				map_directed_obstacle_range[i]=r;
-				break; // check this command
+
+				double obstacle_prob=map_.prob[x][y];						
+				
+				//std::cout << " value of x is= "<<x<< " value of y is " <<y << " obstacle_prob " << obstacle_prob<<std::endl;
+
+				if (obstacle_prob > threshold_for_obstacle) // Note we check for certain threshold
+				{
+					map_directed_obstacle_range[i2]=r;				
+					//std::cout <<"get p.GetPose().x=" <<p.GetPose().x<<" x="<<x<<" y="<<y<< " value of p.GetPose().y="<<p.GetPose().y << " i2=" <<i2 << " r="<<r<<" value of x is= "<<x<< " y=" <<y << " obstacle_prob=" << obstacle_prob<<std::endl;
+					reached=true; // check this command
+				}
+
 			}
 
 			r=r+search_increment;
+			//std::cout << "r "<<r ;
 		}
 	}
+
+	double per_particle_sensor_probability_vector[NUM_LASER-START_LASER_INDEX];
+
+	std::fill_n(per_particle_sensor_probability_vector,NUM_LASER-START_LASER_INDEX,-1); // to -1 
+
 
 	//Call the function to generate laser probabilities per particle.	
     Sensor_models_laser_PDF_vector( map_directed_obstacle_range, hop, laser_row_index, per_particle_sensor_probability_vector );
 
     double weight_log=0.0;
 
-	for (int j =0 ; j < NUM_LASER ; j++)
+	for (int j =0 ; j < NUM_LASER-START_LASER_INDEX ; j=j+hop)
 	{
-		weight_log=std::log(per_particle_sensor_probability_vector[j])+weight_log;
+		if (per_particle_sensor_probability_vector[j]!=-1)
+			weight_log=std::log(per_particle_sensor_probability_vector[j])+weight_log;
+		//std::cout <<" weight_log " <<weight_log<< "  per_particle_sensor_probability_vector[j]" <<per_particle_sensor_probability_vector[j] <<std::endl;
+
 	}
 
 	double weight_value= std::exp(weight_log);  //actual weight
+
+	//std::cout <<"weight_log total "<< weight_log <<" final weight_value "<<weight_value <<std::endl;
 
 	return weight_value;
 
@@ -255,39 +282,50 @@ double ParticleFilter::SensorModel( Particle & p , int laser_row_index)
 // Matlab equivalent is one line plot /(x,max(exp(-x),normpdf(x,9,.5))) // produce medium peaky graphs
 
 void ParticleFilter::Sensor_models_laser_PDF_vector( int map_directed_obstacle_range[],int hop,int laser_row_index,double per_particle_sensor_probability_vector[] )
-{
+{	
 
 	double laser_mean;
-	double laser_std=0.5; //editable
-	double min_probability_setting=0.02; //editable
+	double laser_std=100; //editable
+	double MIN_PROBABILITY_VALUE=0.02; //editable
 	double exp_value=0.0;
 	double normal_value=0.0;
 	
-	for( int i ; i < NUM_LASER ; i++ )
+	for( int i =0 ; i < NUM_LASER-START_LASER_INDEX ; i=i+hop )
 
 	{
+		//std::cout <<" Sensor_models_laser_PDF_vector i="<<i<<std::endl;
+
 		if (map_directed_obstacle_range[i]!=-1)
 		{
 			//create normal distribution
 			laser_mean=map_directed_obstacle_range[i];
 
 			// fetch reading at value
-			double fetch_laser_value_at_this_point = laser_data_.data.row(laser_row_index)[i]; // REVIEW this
+			double fetch_laser_value_at_this_point = laser_data_.data.row(laser_row_index)[i+START_LASER_INDEX]; // REVIEW this
 
 			//create normal distribution
 			std::normal_distribution<double> distribution (laser_mean, laser_std);
 
-			// From Normal Distrubution of PDF
-			// = distribution(fetch_laser_value_at_this_point);
-			normal_value= (1/(laser_std*std::sqrt(2*M_PI)))*std::exp(-.5*std::pow( ((fetch_laser_value_at_this_point - laser_mean)/laser_std)  ,2))      ;
+			// Get probability from Normal Distrubution at this point
+			double normal_value1st_half = (1.0/(laser_std*std::sqrt(2*M_PI))) ;
+
+			double normal_value2nd_half = std::exp( -0.5 * std::pow( (fetch_laser_value_at_this_point - laser_mean )/laser_std,2.0)   )      ;
+
+			normal_value = normal_value1st_half* normal_value2nd_half ;	
 
 			// From Exponential Function of PDF , since its falling , it e^(-x)
 			exp_value=std::exp(-1.0*fetch_laser_value_at_this_point);
 
-			// add some minor noise
-			double max_step1=std::max(exp_value,min_probability_setting);
+			// add some minor noise and get max of two
+			double max_step1=std::max(exp_value,MIN_PROBABILITY_VALUE);
+			
 			// get the maximum of the two
+			double val=std::max(max_step1,normal_value);
+
 			per_particle_sensor_probability_vector[i]=std::max(max_step1,normal_value);
+
+			//std::cout <<" i="<<i<<" laser_mean="<< laser_mean << " fetch_laser_value_at_this_point=" << fetch_laser_value_at_this_point<< " normal_value=" <<normal_value   <<" n1="<<normal_value1st_half<<" n2="<<normal_value2nd_half << " exp_value=" <<exp_value<<" max_step1=" <<max_step1<<" per_particle_sensor_probability_vector[]=" <<per_particle_sensor_probability_vector[i] << std::endl;
+
 		}
 	}
 

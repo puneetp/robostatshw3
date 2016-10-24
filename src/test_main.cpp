@@ -9,7 +9,8 @@
 
 using namespace std;
 
-#define TEST_IMPORTANCE_SAMPLING 
+//#define TEST_IMPORTANCE_SAMPLING 
+#define SENSOR_MODEL
 
 int main (int argc , char ** argv )
 
@@ -45,6 +46,34 @@ int main (int argc , char ** argv )
 	#endif
 
 	// Test Something Else
+
+		// ParticleFilter(int num_particles, double motion_mean, double motion_sigma, double laser_mean, double laser_sigma) {
+
+		// 	num_particles_ = num_particles;
+		// 	motion_mean_ = motion_mean;
+		// 	motion_sigma_ = motion_sigma;
+		// 	laser_mean_ = laser_mean;
+		// 	laser_sigma_ = laser_sigma;
+		// }
+
+
+
+	#ifdef SENSOR_MODEL
+		std::vector<Pose> traj;
+		int num_particles=1000;
+		cout<<"Hey yaa testing Sensor Model! No. of particles are = "<< num_particles << endl;
+		ParticleFilter filter_obj {num_particles,0,.1,0,.1};
+		//ParticleFilter pf(1e4, 0, 0.1, 0, 0.1);
+		filter_obj.ReadData("../data/robotdata1.log", "../data/wean.dat");
+		filter_obj.Filter(traj);
+
+	#endif
+
+
+
+
+
+
 
  	return (0);
 

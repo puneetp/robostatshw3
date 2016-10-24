@@ -12,6 +12,7 @@ file(GLOB test_sources "src/*.cpp" "src/*.c")
 list(REMOVE_ITEM run_sources "${CMAKE_CURRENT_SOURCE_DIR}/src/getsensormodel.cpp" "${CMAKE_CURRENT_SOURCE_DIR}/src/probabilityDensityFunction.cpp" "${CMAKE_CURRENT_SOURCE_DIR}/src/test_main.cpp")
 
 list(REMOVE_ITEM test_sources "${CMAKE_CURRENT_SOURCE_DIR}/src/getsensormodel.cpp" "${CMAKE_CURRENT_SOURCE_DIR}/src/probabilityDensityFunction.cpp" "${CMAKE_CURRENT_SOURCE_DIR}/src/main.cpp")
+
 #Print out the value of source value of source.
 #message("${sources}")
 
