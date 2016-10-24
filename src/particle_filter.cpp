@@ -139,6 +139,8 @@ Filter(std::vector<Pose> &trajectory) {
 	DumpOdomToFile();
 	DumpLaserToFile();
 
+	UpdateDisplay();
+
 	// // Initialize with first odom entry
 	// prev_T = ComputeTransform(odom_data_.data(0, 0), odom_data_.data(0, 1), odom_data_.data(0, 2));
 	// ++odom_idx;
@@ -419,6 +421,10 @@ TestMotionModel() {
 	Particle p;
 	p.SetPose(odom_data_.data(0, 0), odom_data_.data(0, 1), odom_data_.data(0, 2));
 	p.SetT(ComputeTransform(odom_data_.data(0, 0), odom_data_.data(0, 1), odom_data_.data(0, 2)));
+	num_particles_ = 1;
+	std::vector<Particle> temp;
+	temp.push_back(p);
+	particles_ = temp;
 
 	prev_T = ComputeTransform(odom_data_.data(0, 0), odom_data_.data(0, 1), odom_data_.data(0, 2));
 
@@ -431,6 +437,7 @@ TestMotionModel() {
 		fprintf(f, "%lf,%lf,%lf\n", pose.x, pose.y, pose.theta);
 		prev_T << curr_T;
 		++odom_idx;
+		UpdateDisplay();
 	}
 
 	fclose(f);
@@ -448,10 +455,10 @@ void ParticleFilter::UpdateDisplay(){
 	// Draw Particles
 	for (int i=0; i<particles_.size(); i++){
 		circle(map_rgb_mat, cv::Point(particles_[i].GetPose().x/10, 
-			particles_[i].GetPose().y/10), 0.5, cv::Scalar(0,255,0), 0.5);
+			particles_[i].GetPose().y/10), 4, cv::Scalar(0,255,0), 4);
 	}
 
 	// Display Image
 	cv::imshow("ParticleFilter", map_rgb_mat);
-	cv::waitKey(1);
+	cv::waitKey(0);
 }
