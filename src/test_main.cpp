@@ -9,27 +9,29 @@
 
 using namespace std;
 
-#define TEST_IMPORTANCE_SAMPLING 
+// #define TEST_IMPORTANCE_SAMPLING 
+#define TEST_MAP_DISPLAY
 
 int main (int argc , char ** argv )
 
 {
 
-	// std::vector<Pose> traj;
- // 	ParticleFilter pf(1e4, 0, 0.1, 0, 0.1);
- // 	pf.ReadData("../data/robotdata1.log", "../data/wean.dat");
- // 	pf.Filter(traj);
+	std::vector<Pose> traj;
+ 	ParticleFilter pf(1e4, 0, 0.1, 0, 0.1);
+ 	pf.ReadData("../data/robotdata1.log", "../data/wean.dat");
+ 	pf.Filter(traj);
 
 	// Test Importance Sampling
 	#ifdef TEST_IMPORTANCE_SAMPLING
+		std::cout << std::endl;
+		std::cout << "<===== Importance Sampling Output =====>" << std::endl;
+		
 		std::vector<Pose> traj_tsi;
 		const unsigned int num_particles = 5; // also change weights
 		ParticleFilter pf_tsi(num_particles, 0, 0.1, 0, 0.1);
 	 	pf_tsi.ReadData("../data/robotdata1.log", "../data/wean.dat");
  		pf_tsi.Filter(traj_tsi);
-		
-		std::cout << std::endl;
-		std::cout << "<===== Importance Sampling Output =====>" << std::endl;
+
 		// Print All Particles (use theta as ID)
 		std::cout << "Before = ";
 		for (int i=0; i<num_particles; i++){
@@ -55,11 +57,26 @@ int main (int argc , char ** argv )
 		std::cout << std::endl;
 	#endif
 
+	#ifdef TEST_MAP_DISPLAY
+		std::cout << std::endl;
+		std::cout << "<===== Test Map Display Output =====>" << std::endl;
+		for (int i=0; i<100; i++){
+			pf.UpdateDisplay();
+		}
+		// char crap;
+		// std::cin >> crap;
+		std::cout << std::endl;		
+	#endif
+
 	// Test Something Else
+	// #ifdef SOMETHING
+	// 	std::cout << std::endl;
+	// 	std::cout << "<===== Something Else Output =====>" << std::endl;
+
+	// 	std::cout << std::endl;
+	// #endif
 
  	return (0);
-
-
 
 	//test code
 	// Eigen::MatrixXd m(10,10);

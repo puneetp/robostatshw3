@@ -5,11 +5,26 @@
 #include <iostream>
 #include "particle_filter.h"
 #include "math.h"
+#include <opencv2/core/core.hpp>
+#include <opencv2/highgui/highgui.hpp>
+#include <cv.h>
 
 #define NUM_ODOM 			4
 #define NUM_LASER			187
 #define LASER_POD_FORWARD_OFFSET   25 // This is in 
 #define UNOCCUPIED_TOL		1e-2
+
+/** Constructor */
+ParticleFilter::
+ParticleFilter(int num_particles, double motion_mean, double motion_sigma,
+	double laser_mean, double laser_sigma) {
+	num_particles_ = num_particles;
+	motion_mean_ = motion_mean;
+	motion_sigma_ = motion_sigma;
+	laser_mean_ = laser_mean;
+	laser_sigma_ = laser_sigma;
+	cv::namedWindow("ParticleFilter", CV_WINDOW_NORMAL);
+}
 
 Eigen::Matrix3d ParticleFilter::
 ComputeTransform(double x, double y, double theta) {
@@ -143,7 +158,9 @@ Filter(std::vector<Pose> &trajectory) {
 	// 	// Importance sampling
 		// ImportanceSampling(particles_)
 	// 	laser_idx++;		
+	//  pf.UpdateDisplay();
 	// }
+
 }
 
 /* Regenerates the particles_ according to weights
@@ -387,6 +404,22 @@ DumpLaserToFile() {
 	fclose(f);
 }
 
+/** Updates the visualization of the map */
+void ParticleFilter::UpdateDisplay(){
+	
+	// Convert Map to Mat (RGB)
+	cv::Mat map_mat = cv::Mat(map_.size_y, map_.size_x, CV_64F, map_.prob);
+	cv::Mat map_rgb_mat = cv::Mat(map_.size_y, map_.size_x, CV_8UC3);
+	map_mat.convertTo(map_mat, CV_32F);
+	cv::cvtColor(map_mat, map_rgb_mat, CV_GRAY2RGB, 3);  		
 
+	// Draw Particles
+	for (int i=0; i<particles_.size(); i++){
+		circle(map_rgb_mat, cv::Point(particles_[i].GetPose().x/10, 
+			particles_[i].GetPose().y/10), 0.5, cv::Scalar(0,255,0), 0.5);
+	}
 
-
+	// Display Image
+	cv::imshow("ParticleFilter", map_rgb_mat);
+	cv::waitKey(1);
+}
