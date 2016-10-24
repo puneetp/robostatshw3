@@ -5,6 +5,11 @@
 #include <stdlib.h>
 #include <string.h>
 
+/**
+* DANGER!
+* DO NOT FORGET: Prob = 0 ==> unoccupied
+*/
+
 typedef struct {
 	int resolution, size_x, size_y;
 	float offset_x, offset_y;
