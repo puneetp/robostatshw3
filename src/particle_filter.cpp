@@ -5,12 +5,27 @@
 #include <iostream>
 #include "particle_filter.h"
 #include "math.h"
+#include <opencv2/core/core.hpp>
+#include <opencv2/highgui/highgui.hpp>
+#include <cv.h>
 
 #define NUM_ODOM 			4
 #define START_LASER_INDEX   7
 #define NUM_LASER			187
 #define LASER_POD_FORWARD_OFFSET   25 // This is in 
 #define UNOCCUPIED_TOL		1e-2
+
+/** Constructor */
+ParticleFilter::
+ParticleFilter(int num_particles, double motion_mean, double motion_sigma,
+	double laser_mean, double laser_sigma) {
+	num_particles_ = num_particles;
+	motion_mean_ = motion_mean;
+	motion_sigma_ = motion_sigma;
+	laser_mean_ = laser_mean;
+	laser_sigma_ = laser_sigma;
+	cv::namedWindow("ParticleFilter", CV_WINDOW_NORMAL);
+}
 
 
 Eigen::Matrix3d ParticleFilter::
@@ -26,14 +41,16 @@ ComputeTransform(double x, double y, double theta) {
 
 Eigen::Matrix3d ParticleFilter::
 NoisyTransform(Eigen::Matrix3d T1, Eigen::Matrix3d T2) {
+	// return T2 * T1.inverse();
+
 	// Get displacements
-	Eigen::Matrix3d dT = T1.inverse() * T2;
+	Eigen::Matrix3d dT = T2 * T1.inverse();
 	double dx = dT(0, 2);
 	double dy = dT(1, 2);
 	double dtheta = std::atan2(-dT(0, 1), dT(0, 0));
 
 	// Add some noise
-	std::default_random_engine generator;
+	std::default_random_engine generator(time(0));
 	std::normal_distribution<double> dist_x(dx, motion_sigma_);
 	std::normal_distribution<double> dist_y(dy, motion_sigma_);
 	std::normal_distribution<double> dist_theta(dtheta, motion_sigma_);
@@ -120,14 +137,20 @@ Filter(std::vector<Pose> &trajectory) {
 	// Initialize particles
 	InitParticles();
 
-	//DumpParticlesToFile();
+
+
+	DumpParticlesToFile();
+	DumpOdomToFile();
+	DumpLaserToFile();
+
+	UpdateDisplay();
 
 	// // Initialize with first odom entry
 	// prev_T = ComputeTransform(odom_data_.data(0, 0), odom_data_.data(0, 1), odom_data_.data(0, 2));
 	// ++odom_idx;
 
 
-	 while(laser_idx<2)
+	 while(laser_idx<5)
 	  {
 	// 	// Read log file. Let's stick with laser for now?
 	// 	curr_T = ComputeTransform(laser_data_.data(laser_idx, 0), laser_data_.data(laser_idx, 1), laser_data_.data(laser_idx, 2));
@@ -141,34 +164,53 @@ Filter(std::vector<Pose> &trajectory) {
 	 		//std::cout << " num_particles_ i=" <<i<<std::endl;
 	 	}
 	// 	// Importance sampling
+
 	 	laser_idx++;		
 	 }
+
+		// ImportanceSampling(particles_)
+	// 	laser_idx++;		
+	//  pf.UpdateDisplay();
+	// }
+
+
 }
 
 /* Regenerates the particles_ according to weights
  */
-void ParticleFilter::ImportanceSampling(std::vector<Particle> &particles){
+void ParticleFilter::ImportanceSampling(std::vector<Particle> &particles , int verbose){
 	
 	// Compute vector of cumulative weights
 	const unsigned int num_particles = particles.size();
 	std::vector<double> cum_weights(num_particles+1, 0.0);
-	for (int i=1; i<num_particles; i++){
-		cum_weights[i] = cum_weights[i-1] + particles[i].GetWeight();
+	for (int i=1; i<num_particles+1; i++){
+		cum_weights[i] = cum_weights[i-1] + fabs(particles[i-1].GetWeight());
 	}
 
 	// Generate new particles
 	std::vector<Particle> new_particles;
 	std::default_random_engine generator(time(0));
 	std::uniform_real_distribution<float> distribution(0.0, cum_weights[num_particles]);
+	
+	if (verbose){
+		std::cout << "cum_weights = ";
+		for(auto it = cum_weights.begin(); it != cum_weights.end(); it++){
+			std::cout<< *it << ",";
+	    }
+		std::cout << std::endl;
+	}
+
 	for (int i=0; i<num_particles; i++){
 		double random_no = distribution(generator);
 		auto lower = std::lower_bound(cum_weights.begin(), cum_weights.end(), random_no);
-		unsigned int index = lower - cum_weights.begin();
+		unsigned int index = lower - cum_weights.begin() - 1; // -1 => caz weight has more 1 more element
 		new_particles.push_back(particles[index]);
+		if (verbose){
+			std::cout << "Random no= " << random_no << " index= " << index << std::endl;
+		}
 	}
+	std::cout << std::endl;
 
-	// Set weights to zero
-	
 	// Replace particles_ with new particles
 	particles = new_particles;
 }
@@ -374,6 +416,8 @@ InitParticles() {
 	}
 }
 
+
+/******************** test code *****************************************/
 void ParticleFilter::
 DumpParticlesToFile() {
 	FILE *f = fopen("particles.csv", "w");
@@ -382,8 +426,85 @@ DumpParticlesToFile() {
 		Pose p = particles_[i].GetPose();
 		fprintf(f, "%lf,%lf,%lf\n", p.x, p.y, p.theta);
 	}
+
+	fclose(f);
 }
 
+void ParticleFilter::
+DumpOdomToFile() {
+	FILE *f = fopen("odom.csv", "w");
 
+	for(int i = 0; i < odom_data_.rows; ++i) {
+		fprintf(f, "%lf,%lf,%lf,%lf\n", odom_data_.data(i, 0), odom_data_.data(i, 1),
+			odom_data_.data(i, 2), odom_data_.data(i, 3));
+	}
 
+	fclose(f);
+}
 
+void ParticleFilter::
+DumpLaserToFile() {
+	FILE *f = fopen("laser.csv", "w");
+
+	for(int i = 0; i < laser_data_.rows; ++i) {
+		for(int j = 0; j < NUM_LASER-1; ++j) {
+			fprintf(f, "%lf,", laser_data_.data(i, j));
+		}
+		fprintf(f, "%lf\n", laser_data_.data(i, NUM_LASER-1));
+	}
+
+	fclose(f);
+}
+
+void ParticleFilter::
+TestMotionModel() {
+	FILE *f = fopen("particle_traj.csv", "w");
+	Pose pose;
+	int odom_idx = 0;
+	Eigen::Matrix3d curr_T, prev_T;
+
+	// Initialize particle to the first odom reading
+	Particle p;
+	p.SetPose(odom_data_.data(0, 0), odom_data_.data(0, 1), odom_data_.data(0, 2));
+	p.SetT(ComputeTransform(odom_data_.data(0, 0), odom_data_.data(0, 1), odom_data_.data(0, 2)));
+	num_particles_ = 1;
+	std::vector<Particle> temp;
+	temp.push_back(p);
+	particles_ = temp;
+
+	prev_T = ComputeTransform(odom_data_.data(0, 0), odom_data_.data(0, 1), odom_data_.data(0, 2));
+
+	++odom_idx;
+
+	while(odom_idx <= odom_data_.rows-1) {
+		curr_T = ComputeTransform(odom_data_.data(odom_idx, 0), odom_data_.data(odom_idx, 1), odom_data_.data(odom_idx, 2));
+		MotionModel(p, prev_T, curr_T);
+		pose = p.GetPose();
+		fprintf(f, "%lf,%lf,%lf\n", pose.x, pose.y, pose.theta);
+		prev_T << curr_T;
+		++odom_idx;
+		UpdateDisplay();
+	}
+
+	fclose(f);
+}
+
+/** Updates the visualization of the map */
+void ParticleFilter::UpdateDisplay(){
+	
+	// Convert Map to Mat (RGB)
+	cv::Mat map_mat = cv::Mat(map_.size_y, map_.size_x, CV_64F, map_.prob);
+	cv::Mat map_rgb_mat = cv::Mat(map_.size_y, map_.size_x, CV_8UC3);
+	map_mat.convertTo(map_mat, CV_32F);
+	cv::cvtColor(map_mat, map_rgb_mat, CV_GRAY2RGB, 3);  		
+
+	// Draw Particles
+	for (int i=0; i<particles_.size(); i++){
+		circle(map_rgb_mat, cv::Point(particles_[i].GetPose().x/10, 
+			particles_[i].GetPose().y/10), 4, cv::Scalar(0,255,0), 4);
+	}
+
+	// Display Image
+	cv::imshow("ParticleFilter", map_rgb_mat);
+	cv::waitKey(0);
+}
