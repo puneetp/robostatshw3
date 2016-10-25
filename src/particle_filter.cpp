@@ -277,11 +277,11 @@ double ParticleFilter::SensorModel( Particle & p , int laser_row_index)
 	//for ( int i =0 ; i<NUM_LASER;i=i+hop)
 	for ( int i2 =0 ; i2<NUM_LASER_VALS ;i2=i2+hop) //NUM_LASER-START_LASER_INDEX
 	{
-		int x=0;  // col
-		int y=0;  // row		
+		int col_x=0;  // col
+		int row_y=0;  // row		
 		int r=0;
 		bool reached(false);
-		while (  x<map_.size_x && y<map_.size_y  &&  x >= 0 && y >= 0 && !reached  )  
+		while (  col_x<map_.size_x && row_y<map_.size_y  &&  col_x >= 0 && row_y >= 0 && !reached  )  
 		{
 			//std::cout << " value of pi" <<M_PI << std::endl;
 
@@ -309,13 +309,13 @@ double ParticleFilter::SensorModel( Particle & p , int laser_row_index)
 
 			GetIndexFromXY(p.GetPose().x + rx + laser_x_offset, 
 				p.GetPose().y + ry + laser_y_offset,
-				y, x);
+				row_y, col_x);
 
 
-			if ( ((x<map_.size_x) && (y<map_.size_y))  &&  ((x >= 0) && ( y >= 0)) )
+			if ( ((col_x<map_.size_x) && (row_y<map_.size_y))  &&  ((col_x >= 0) && ( row_y >= 0)) )
 			{
 
-				double obstacle_prob=map_.prob[y][x];						
+				double obstacle_prob=map_.prob[row_y][col_x];						
 				
 				//std::cout << " value of x is= "<<x<< " value of y is " <<y << " obstacle_prob " << obstacle_prob<<std::endl;
 
