@@ -18,12 +18,12 @@
 
 // Laser params
 #define THRESHOLD_FOR_OBSTACLE 				0.9
-#define MIN_PROBABILITY_VALUE				0.0005
-#define LASER_HOP 							5 // How many lasers do we want to hop in search space Minimum is one
+#define MIN_PROBABILITY_VALUE				0.1
+#define LASER_HOP 							4 // How many lasers do we want to hop in search space Minimum is one
 #define EXP_MULTIPLIER						1.0
-#define GAUSSIAN_MULTIPLIER					3
-#define AT_WORLDS_END						7500
-#define EOR_PROB  							0.05	
+#define GAUSSIAN_MULTIPLIER					70
+#define AT_WORLDS_END						2000
+#define EOR_PROB  							0.3	
 #define RANGE_INCREMENT						5
 
 /** Constructor */
@@ -152,14 +152,15 @@ ReadData(char* data_file, char *map_file) {
 
 void ParticleFilter::
 Filter(std::vector<Pose> &trajectory) {
-	int laser_idx(1), odom_idx(0);
+	int laser_idx(0), odom_idx(0);
 	Eigen::Matrix3d prev_T, curr_T;
 
 	// Preprocess map
 	PreprocessMap();
 
 	// Initialize particles
-	InitParticles();
+	// InitParticles();
+	HackInitParticles();
 
 	UpdateDisplay();
 
@@ -170,9 +171,9 @@ Filter(std::vector<Pose> &trajectory) {
 	// UpdateDisplay();
 
 	// // Initialize with first odom entry
-	prev_T = ComputeTransform(odom_data_.data(0, 0), odom_data_.data(0, 1), odom_data_.data(0, 2));
+	prev_T = ComputeTransform(laser_data_.data(0, 0), laser_data_.data(0, 1), laser_data_.data(0, 2));
 	// ++odom_idx;
-
+	++laser_idx;
 
 	while(laser_idx < 100)
 	{
@@ -195,6 +196,8 @@ Filter(std::vector<Pose> &trajectory) {
 		// Importance sampling
 	 	ImportanceSampling(particles_);
 	 	// std::cout << "Importance sampling done\n";
+
+	 	prev_T << curr_T;
 
 	 	// Display
 	 	UpdateDisplay();
@@ -219,6 +222,8 @@ void ParticleFilter::ImportanceSampling(std::vector<Particle> &particles , int v
 	std::random_device rd;
 	std::default_random_engine generator(rd());
 	std::uniform_real_distribution<float> distribution(0.0, cum_weights[num_particles]);
+
+	std::cout << "cum weights: " << cum_weights[num_particles] << "\n";
 	
 	if (verbose){
 		std::cout << "cum_weights = ";
@@ -231,7 +236,10 @@ void ParticleFilter::ImportanceSampling(std::vector<Particle> &particles , int v
 	for (int i=0; i<num_particles; i++){
 		double random_no = distribution(generator);
 		auto lower = std::lower_bound(cum_weights.begin(), cum_weights.end(), random_no);
-		unsigned int index = lower - cum_weights.begin() - 1; // -1 => caz weight has more 1 more element
+		int index = lower - cum_weights.begin() - 1; // -1 => caz weight has more 1 more element
+		if(index < 0) {
+			continue;
+		}
 		new_particles.push_back(particles[index]);
 		if (verbose){
 			std::cout << "Random no= " << random_no << " index= " << index << std::endl;
@@ -259,7 +267,6 @@ double ParticleFilter::SensorModel( Particle & p , int laser_row_index)
 
 	//Initializing
 	int search_increment = RANGE_INCREMENT;
-	double threshold_for_obstacle=0.7;
 
 	int hop=LASER_HOP;// How many lasers do we want to hop in search space Minimum is one
 
@@ -270,11 +277,11 @@ double ParticleFilter::SensorModel( Particle & p , int laser_row_index)
 	//for ( int i =0 ; i<NUM_LASER;i=i+hop)
 	for ( int i2 =0 ; i2<NUM_LASER_VALS ;i2=i2+hop) //NUM_LASER-START_LASER_INDEX
 	{
-		int x=0;
-		int y=0;
+		int x=0;  // col
+		int y=0;  // row		
 		int r=0;
 		bool reached(false);
-		while (  ((x<map_.size_x) && (y<map_.size_y))  &&  (((x >= 0)&&(y >= 0)) && !reached)  )  
+		while (  x<map_.size_x && y<map_.size_y  &&  x >= 0 && y >= 0 && !reached  )  
 		{
 			//std::cout << " value of pi" <<M_PI << std::endl;
 
@@ -296,15 +303,19 @@ double ParticleFilter::SensorModel( Particle & p , int laser_row_index)
 
 			double laser_y_offset = LASER_POD_FORWARD_OFFSET*std::sin(robot_theta);
 
-			x= std::floor((p.GetPose().x + rx + laser_x_offset) / 10.0);
+			// x= std::floor((p.GetPose().x + rx + laser_x_offset) / 10.0);
 
-			y= std::floor((p.GetPose().y + ry + laser_y_offset) / 10.0);
+			// y= std::floor((p.GetPose().y + ry + laser_y_offset) / 10.0);
+
+			GetIndexFromXY(p.GetPose().x + rx + laser_x_offset, 
+				p.GetPose().y + ry + laser_y_offset,
+				y, x);
 
 
 			if ( ((x<map_.size_x) && (y<map_.size_y))  &&  ((x >= 0) && ( y >= 0)) )
 			{
 
-				double obstacle_prob=map_.prob[x][y];						
+				double obstacle_prob=map_.prob[y][x];						
 				
 				//std::cout << " value of x is= "<<x<< " value of y is " <<y << " obstacle_prob " << obstacle_prob<<std::endl;
 
@@ -313,6 +324,10 @@ double ParticleFilter::SensorModel( Particle & p , int laser_row_index)
 					map_directed_obstacle_range[i2]=r;				
 					// std::cout <<"get p.GetPose().x=" <<p.GetPose().x<<" x="<<x<<" y="<<y<< " value of p.GetPose().y="<<p.GetPose().y << " i2=" <<i2 << " r="<<r<<" value of x is= "<<x<< " y=" <<y << " obstacle_prob=" << obstacle_prob<<std::endl;
 					reached=true; // check this command
+				}
+				else if(obstacle_prob == -1) {
+					// Stop searching when we hit unknown space, and discard this laser angle
+					reached = true;
 				}
 
 			}
@@ -335,6 +350,7 @@ double ParticleFilter::SensorModel( Particle & p , int laser_row_index)
 	for (int j =0 ; j < NUM_LASER_VALS ; j=j+hop)
 	{
 		if (!(std::abs(per_particle_sensor_probability_vector[j] - (-1)) < 1e-4)) {
+		// if(per_particle_sensor_probability_vector[j] != -1) {
 
 			weight_log += std::log(per_particle_sensor_probability_vector[j]);
 		}
@@ -370,7 +386,8 @@ void ParticleFilter::Sensor_models_laser_PDF_vector( double map_directed_obstacl
 	{
 		//std::cout <<" Sensor_models_laser_PDF_vector i="<<i<<std::endl;
 
-		if (!(std::abs(map_directed_obstacle_range[i] - (-1)) < 1e-4)) 
+		if (!(std::abs(map_directed_obstacle_range[i] - (-1)) < 1e-4))
+		// if(map_directed_obstacle_range[i] != -1)
 		{
 			//create normal distribution
 			laser_mean=map_directed_obstacle_range[i];
@@ -407,7 +424,8 @@ void ParticleFilter::Sensor_models_laser_PDF_vector( double map_directed_obstacl
 
 			per_particle_sensor_probability_vector[i]= std::max(val, eor_prob);
 
-			//std::cout <<" i="<<i<<" laser_mean="<< laser_mean << " fetch_laser_value_at_this_point=" << fetch_laser_value_at_this_point<< " normal_value=" <<normal_value   <<" n1="<<normal_value1st_half<<" n2="<<normal_value2nd_half << " exp_value=" <<exp_value<<" max_step1=" <<max_step1<<" per_particle_sensor_probability_vector[]=" <<per_particle_sensor_probability_vector[i] << std::endl;
+			// if (!(i%10))
+			// 	std::cout <<" i="<<i<<" laser_mean="<< laser_mean << " fetch_laser_value_at_this_point=" << fetch_laser_value_at_this_point<< " normal_value=" <<normal_value   <<" n1="<<normal_value1st_half<<" n2="<<normal_value2nd_half << " exp_value=" <<exp_value<<" max_step1=" <<max_step1<<" per_particle_sensor_probability_vector[]=" <<per_particle_sensor_probability_vector[i] << std::endl;
 
 		}
 	}
@@ -448,8 +466,9 @@ InitParticles() {
 		theta = real_distribution(generator);
 
 		// Place the particle in the center of the cell (correct?)
-		x = unoccupied_list_[cell_idx].col * map_.resolution + map_.resolution/2;
-		y = unoccupied_list_[cell_idx].row * map_.resolution + map_.resolution/2;
+		// x = unoccupied_list_[cell_idx].col * map_.resolution + map_.resolution/2;
+		// y = unoccupied_list_[cell_idx].row * map_.resolution + map_.resolution/2;
+		GetXYFromIndex(x, y, unoccupied_list_[cell_idx].row, unoccupied_list_[cell_idx].col);
 
 		p.SetPose(x, y, theta);
 		p.SetT(ComputeTransform(x, y, theta));
@@ -462,6 +481,37 @@ InitParticles() {
 	}
 }
 
+void ParticleFilter::
+HackInitParticles() {
+	int seed_row(400), seed_col(440), num_thetas(20);
+	int window_size(30);
+	double x, y, theta;
+	num_particles_ = 0;
+
+	std::random_device rd;
+	std::default_random_engine generator(rd());
+	std::uniform_real_distribution<double> real_distribution(0.0, 2*M_PI);
+
+	for(int i = seed_row - window_size; i < seed_row + window_size; i += 2) {
+		for(int j = seed_col - window_size; j < seed_col + window_size; j += 2) {
+			for(int k = 1; k <= num_thetas; ++k) {
+				Particle p;
+				// y = i * map_.resolution + map_.resolution/2;
+				// x = j * map_.resolution + map_.resolution/2;
+				GetXYFromIndex(x, y, i, j);
+				theta = real_distribution(generator);
+
+				p.SetPose(x, y, theta);
+				p.SetT(ComputeTransform(x, y, theta));
+
+				particles_.push_back(p);
+				++num_particles_;
+			}
+		}
+	}
+
+	std::cout << "num particles: " << num_particles_ << "\n";
+}
 
 /******************** test code *****************************************/
 void ParticleFilter::
@@ -539,19 +589,46 @@ TestMotionModel() {
 void ParticleFilter::UpdateDisplay(){
 	
 	// Convert Map to Mat (RGB)
-	cv::Mat map_mat = cv::Mat(map_.size_x, map_.size_y, CV_64F, map_.prob);
-	cv::Mat map_rgb_mat = cv::Mat(map_.size_x, map_.size_y, CV_8UC3);
+	// cv::Mat map_mat = cv::Mat(map_.size_x, map_.size_y, CV_64F, map_.prob);
+	// cv::Mat map_rgb_mat = cv::Mat(map_.size_x, map_.size_y, CV_8UC3);
+	// map_mat.convertTo(map_mat, CV_32F);
+	// cv::cvtColor(map_mat, map_rgb_mat, CV_GRAY2RGB, 3);  		
+	cv::Mat map_mat = cv::Mat(map_.size_y, map_.size_x, CV_64F, map_.prob);
+	cv::Mat map_rgb_mat = cv::Mat(map_.size_y, map_.size_x, CV_8UC3);
 	map_mat.convertTo(map_mat, CV_32F);
-	cv::cvtColor(map_mat, map_rgb_mat, CV_GRAY2RGB, 3);  		
+	cv::cvtColor(map_mat, map_rgb_mat, CV_GRAY2RGB, 3);  
 	// cv::transpose(map_rgb_mat, map_rgb_mat);
 
 	// Draw Particles
+	int row, col;
 	for (int i=0; i<particles_.size(); i++){
-		circle(map_rgb_mat, cv::Point(particles_[i].GetPose().x/10, 
-			particles_[i].GetPose().y/10), 4, cv::Scalar(0,255,0), 4);
+		GetIndexFromXY(particles_[i].GetPose().x, particles_[i].GetPose().y, row, col);
+		// circle(map_rgb_mat, cv::Point(particles_[i].GetPose().x/10, 
+		// 	particles_[i].GetPose().y/10), 2, cv::Scalar(0,255,0), 2);
+		circle(map_rgb_mat, cv::Point(col, row), 2, cv::Scalar(0,255,0), 2);
 	}
 
 	// Display Image
 	cv::imshow("ParticleFilter", map_rgb_mat);
 	cv::waitKey(1);
+}
+
+void ParticleFilter::
+GetXYFromIndex(double &x, double &y, int row, int col) {
+	x = col * map_.resolution + map_.resolution/2;
+	y = map_.size_y * map_.resolution - (row * map_.resolution + map_.resolution/2);
+}
+
+void ParticleFilter::
+GetIndexFromXY(double x, double y, int &row, int &col) {
+	col = std::floor(x / map_.resolution);
+	row = std::floor(map_.size_y - y / map_.resolution);
+
+	// sanitize
+	if(col >= map_.size_x) {
+		col = map_.size_x - 1;
+	}
+	if(row >= map_.size_y) {
+		row = map_.size_y - 1;
+	}
 }

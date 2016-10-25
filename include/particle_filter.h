@@ -47,6 +47,8 @@ public:
 	/** Initializes particles on the map */
 	void InitParticles();
 
+	void HackInitParticles();
+
 	/** Preprocesses the map. Builds a list of cells with occupancy probability = 0 **/
 	void PreprocessMap();
 
@@ -73,7 +75,7 @@ public:
 	void Sensor_models_laser_PDF_vector( double map_directed_obstacle_range[] ,int hop, int laser_index, double per_particle_sensor_probability_vector[] );
 
 
-	/** Returns the measurement probability for a single laser ray given position. Used by the sensor model.
+	/* Returns the measurement probability for a single laser ray given position. Used by the sensor model.
 	* Constructs an appropriate probability distribution for the given sensing modality.
 	* @param range_measurement actual range value for the given ray_angle from laser data log
 	*/
@@ -92,6 +94,16 @@ public:
 
 	/** Updates the visualization of the map */
 	void UpdateDisplay();
+
+	/** Gets x/y coordinates from row/col. ASSUMES XY ORIGIN IS AT BOTTOM LEFT CORNER,
+	* and array indexing starts from the top left corner. Returns X/Y coords of the cell's center.
+	**/
+	void GetXYFromIndex(double &x, double &y, int row, int col);
+
+	/** Gets row/col index from X/Y coords. ASSUMES XY ORIGIN IS AT BOTTOM LEFT CORNER,
+	* and array indexing starts from the top left corner.
+	**/
+	void GetIndexFromXY(double x, double y, int &row, int &col);
 };
 
 #endif
