@@ -17,7 +17,7 @@ list(REMOVE_ITEM test_sources "${CMAKE_CURRENT_SOURCE_DIR}/src/getsensormodel.cp
 #Print out the value of source value of source.
 #message("${sources}")
 
-SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
+SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -O3")
 
 add_executable (Pfilter ${run_sources})
 target_link_libraries(Pfilter ${OpenCV_LIBS} )

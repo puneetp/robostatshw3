@@ -7,6 +7,7 @@
 #include "math.h"
 #include <opencv2/core/core.hpp>
 #include <opencv2/highgui/highgui.hpp>
+#include <limits>
 
 #define NUM_ODOM 							4
 #define START_LASER_INDEX   				6
@@ -170,7 +171,7 @@ Filter(std::vector<Pose> &trajectory) {
 
 	UpdateDisplay();
 
-	// DumpParticlesToFile();
+	DumpParticlesToFile();
 	// DumpOdomToFile();
 	// DumpLaserToFile();
 
@@ -351,17 +352,22 @@ double ParticleFilter::SensorModel( Particle & p , int laser_row_index)
     Sensor_models_laser_PDF_vector( map_directed_obstacle_range, hop, laser_row_index, per_particle_sensor_probability_vector );
 
     double weight_log = 0.0;
+    bool entered_the_loop(false);
 
 	for (int j =0 ; j < NUM_LASER_VALS ; j=j+hop)
 	{
-		if (!(std::abs(per_particle_sensor_probability_vector[j] - (-1)) < 1e-4)) {
+		if (!(std::abs(per_particle_sensor_probability_vector[j] - (-1)) < 1e-4)) 
+		{
 		// if(per_particle_sensor_probability_vector[j] != -1) {
 
 			weight_log += std::log(per_particle_sensor_probability_vector[j]);
+			entered_the_loop=true;
 		}
 		//std::cout <<" weight_log " <<weight_log<< "  per_particle_sensor_probability_vector[j]" <<per_particle_sensor_probability_vector[j] <<std::endl;
 
 	}
+	if(!entered_the_loop)
+		weight_log=std::numeric_limits<double>::lowest();
 
 	double weight_value= std::exp(weight_log);  //actual weight
 
@@ -488,8 +494,8 @@ InitParticles() {
 
 void ParticleFilter::
 HackInitParticles() {
-	int seed_row(400), seed_col(440), num_thetas(20);
-	int window_size(30);
+	int seed_row(390), seed_col(460), num_thetas(20);
+	int window_size(50);
 	double x, y, theta;
 	num_particles_ = 0;
 
@@ -497,8 +503,8 @@ HackInitParticles() {
 	std::default_random_engine generator(rd());
 	std::uniform_real_distribution<double> real_distribution(0.0, 2*M_PI);
 
-	for(int i = seed_row - window_size; i < seed_row + window_size; i += 2) {
-		for(int j = seed_col - window_size; j < seed_col + window_size; j += 2) {
+	for(int i = seed_row - window_size; i < seed_row + window_size; i += 5) {
+		for(int j = seed_col - window_size; j < seed_col + window_size; j += 5) {
 			for(int k = 1; k <= num_thetas; ++k) {
 				Particle p;
 				// y = i * map_.resolution + map_.resolution/2;
@@ -590,6 +596,10 @@ TestMotionModel() {
 	fclose(f);
 }
 
+// void ParticleFilter::DrawSensorModel()
+// {
+// }
+
 /** Updates the visualization of the map */
 void ParticleFilter::UpdateDisplay(){
 	// Convert Map to Mat (RGB)
@@ -602,19 +612,27 @@ void ParticleFilter::UpdateDisplay(){
 
 	DrawMap();
 	DrawAllPaticles();
-
+	
 	// Display Image
 	cv::imshow("ParticleFilter", img_);
-	cv::waitKey(0);
+	cv::waitKey(1);
 }
 
 void ParticleFilter::DrawMap(){
-	img_ = img_map_;
+	/*TODO: Optimize this!! */
+	cv::Mat map_mat = cv::Mat(map_.size_y, map_.size_x, CV_64F, map_.prob);
+	img_ = cv::Mat(map_.size_y, map_.size_x, CV_8UC3);
+	map_mat.convertTo(map_mat, CV_32F);
+	cv::cvtColor(map_mat, img_, CV_GRAY2RGB, 3);  
 }
 
 void ParticleFilter::DrawAllPaticles(){
 	int row, col;
 	for (int i=0; i<particles_.size(); i++){
+
+		particles_[i].SetPose(particles_[i].GetPose().x + 100,
+			particles_[i].GetPose().y,
+			particles_[i].GetPose().theta);
 		DrawParticle(particles_[i]);
 	}
 }
