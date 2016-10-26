@@ -11,13 +11,14 @@
 using namespace std;
 
 int main (int argc , char ** argv )
-
 {
 	 std::vector<Pose> traj;
-	 //ParticleFilter pf(5*1e3, 0, 1e-4, 0, 30);
-	 ParticleFilter pf(5*1e2, 0, .01 , 0, 50);
-	 std::cout<<" Starting fiter, min value of std::numeric_limits<double>::min() is "<<std::numeric_limits<double>::lowest() <<std::endl;
-	 pf.ReadData("../data/robotdata1.log", "../data/wean.dat");
+ 	// ParticleFilter pf(1e2, 0, 0.1, 0, 15);
+	//ParticleFilter pf(5*1e2, 0, .01 , 0, 50); // puneet
+	 // ParticleFilter pf(5*1e2, 0, 1e-4, 0, 30, "../data/robotdata1.log", "../data/wean.dat");
+	 ParticleFilter pf(10, 0, 1e-4, 0, 15, "../data/robotdata1.log", "../data/wean.dat");
+	 // pf.ReadData("../data/robotdata1.log", "../data/wean.dat");
+
 	 pf.Filter(traj);
 	 // pf.TestMotionModel();
 	 return (0);

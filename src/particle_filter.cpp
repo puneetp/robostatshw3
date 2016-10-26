@@ -7,7 +7,6 @@
 #include "math.h"
 #include <opencv2/core/core.hpp>
 #include <opencv2/highgui/highgui.hpp>
-#include <cv.h>
 #include <limits>
 
 #define NUM_ODOM 							4
@@ -33,13 +32,20 @@
 /** Constructor */
 ParticleFilter::
 ParticleFilter(int num_particles, double motion_mean, double motion_sigma,
-	double laser_mean, double laser_sigma) {
+	double laser_mean, double laser_sigma, char* data_file, char *map_file) {
 	num_particles_ = num_particles;
 	motion_mean_ = motion_mean;
 	motion_sigma_ = motion_sigma;
 	laser_mean_ = laser_mean;
 	laser_sigma_ = laser_sigma;
+	ReadData(data_file, map_file);
 	cv::namedWindow("ParticleFilter", CV_WINDOW_NORMAL);
+	// Import map in img_map_
+	cv::Mat map_mat = cv::Mat(map_.size_y, map_.size_x, CV_64F, map_.prob);
+	img_map_ = cv::Mat(map_.size_y, map_.size_x, CV_8UC3);
+	map_mat.convertTo(map_mat, CV_32F);
+	cv::cvtColor(map_mat, img_map_, CV_GRAY2RGB, 3);  
+	// cv::transpose(img_map_, img_map_);
 }
 
 
@@ -163,8 +169,8 @@ Filter(std::vector<Pose> &trajectory) {
 	PreprocessMap();
 
 	// Initialize particles
-	// InitParticles();
-	HackInitParticles();
+	InitParticles();
+	// HackInitParticles();
 
 	UpdateDisplay();
 
@@ -256,7 +262,6 @@ void ParticleFilter::ImportanceSampling(std::vector<Particle> &particles , int v
 }
 
 double ParticleFilter::SensorModel( Particle & p , int laser_row_index)
-
 {
 	//laser_data_.row(laser_row_index)[]
    //Check if you are in gray space , if yes return 0 weight
@@ -608,30 +613,60 @@ TestMotionModel() {
 
 /** Updates the visualization of the map */
 void ParticleFilter::UpdateDisplay(){
-	
 	// Convert Map to Mat (RGB)
 	// cv::Mat map_mat = cv::Mat(map_.size_x, map_.size_y, CV_64F, map_.prob);
 	// cv::Mat map_rgb_mat = cv::Mat(map_.size_x, map_.size_y, CV_8UC3);
 	// map_mat.convertTo(map_mat, CV_32F);
 	// cv::cvtColor(map_mat, map_rgb_mat, CV_GRAY2RGB, 3);  		
-	cv::Mat map_mat = cv::Mat(map_.size_y, map_.size_x, CV_64F, map_.prob);
-	cv::Mat map_rgb_mat = cv::Mat(map_.size_y, map_.size_x, CV_8UC3);
-	map_mat.convertTo(map_mat, CV_32F);
-	cv::cvtColor(map_mat, map_rgb_mat, CV_GRAY2RGB, 3);  
-	// cv::transpose(map_rgb_mat, map_rgb_mat);
+	// Draw All Particles
+		// Draw One Particle with all rays
 
-	// Draw Particles
+	DrawMap();
+	DrawAllPaticles();
+	
+	// Display Image
+	cv::imshow("ParticleFilter", img_);
+	cv::waitKey(1);
+}
+
+void ParticleFilter::DrawMap(){
+	/*TODO: Optimize this!! */
+	cv::Mat map_mat = cv::Mat(map_.size_y, map_.size_x, CV_64F, map_.prob);
+	img_ = cv::Mat(map_.size_y, map_.size_x, CV_8UC3);
+	map_mat.convertTo(map_mat, CV_32F);
+	cv::cvtColor(map_mat, img_, CV_GRAY2RGB, 3);  
+}
+
+void ParticleFilter::DrawAllPaticles(){
 	int row, col;
 	for (int i=0; i<particles_.size(); i++){
-		GetIndexFromXY(particles_[i].GetPose().x, particles_[i].GetPose().y, row, col);
-		// circle(map_rgb_mat, cv::Point(particles_[i].GetPose().x/10, 
-		// 	particles_[i].GetPose().y/10), 2, cv::Scalar(0,255,0), 2);
-		circle(map_rgb_mat, cv::Point(col, row), 2, cv::Scalar(0,255,0), 2);
-	}
 
-	// Display Image
-	cv::imshow("ParticleFilter", map_rgb_mat);
-	cv::waitKey(1);
+		particles_[i].SetPose(particles_[i].GetPose().x + 100,
+			particles_[i].GetPose().y,
+			particles_[i].GetPose().theta);
+		DrawParticle(particles_[i]);
+	}
+}
+
+void ParticleFilter::DrawParticle(Particle particle){
+	int row, col, row1, col1;
+	const double r = 100; // length of orientation line
+	GetIndexFromXY(particle.GetPose().x, particle.GetPose().y, row, col);
+	GetIndexFromXY(particle.GetPose().x + r*std::cos(particle.GetPose().theta), 
+		           particle.GetPose().y + r*std::sin(particle.GetPose().theta), row1, col1);
+	circle(img_, cv::Point(col, row), 2, cv::Scalar(0,255,0), 2);
+	DrawRay(particle.GetPose().x, 
+		    particle.GetPose().y, 
+		    particle.GetPose().x + r*std::cos(particle.GetPose().theta), 
+		    particle.GetPose().y + r*std::sin(particle.GetPose().theta));
+}
+
+/* Draws a line from (x,y) to (x1,y1) LH*/
+void ParticleFilter::DrawRay(double x, double y, double x1, double y1){
+	int row, col, row1, col1;
+	GetIndexFromXY(x, y, row, col);
+	GetIndexFromXY(x1, y1, row1, col1);
+	cv::line(img_, cv::Point(col, row), cv::Point(col1, row1), cv::Scalar(0,0,255));
 }
 
 void ParticleFilter::

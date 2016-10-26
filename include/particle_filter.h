@@ -4,6 +4,7 @@
 #include "particle.h"
 #include "data_structs.h"
 #include "Eigen/Dense"
+#include <cv.h>
 
 extern "C" {
 	#include "bee-map.h"
@@ -15,7 +16,7 @@ class ParticleFilter {
 public:
 	/** Constructor */
 	ParticleFilter(int num_particles, double motion_mean, double motion_sigma,
-		double laser_mean, double laser_sigma);
+	double laser_mean, double laser_sigma, char* data_file, char *map_file);
 
 	/** Reads laser, odom and map data */
 	void ReadData(char* data_file, char *map_file);
@@ -41,7 +42,8 @@ public:
 	double motion_mean_, motion_sigma_;  			// gaussian parameters for motion model
 	double laser_mean_, laser_sigma_;				// gaussian parameters for laser models
 	std::vector<MapCell> unoccupied_list_;			// List of map cells known to be empty with certainty 
-
+	cv::Mat img_;
+	cv::Mat img_map_;
 	/* ********************** Member functions ***************************** */
 
 	/** Initializes particles on the map */
@@ -104,6 +106,14 @@ public:
 	* and array indexing starts from the top left corner.
 	**/
 	void GetIndexFromXY(double x, double y, int &row, int &col);
+	
+	void DrawMap();
+
+	void DrawAllPaticles();
+
+	void DrawRay(double x, double y, double x1, double y1);
+	
+	void DrawParticle(Particle particle);
 };
 
 #endif
