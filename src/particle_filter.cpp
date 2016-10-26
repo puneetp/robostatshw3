@@ -172,9 +172,6 @@ Filter(std::vector<Pose> &trajectory) {
 	InitParticles();
 	// HackInitParticles();
 
-    DrawMap();
-	UpdateDisplay();
-
 	DumpParticlesToFile();
 	// DumpOdomToFile();
 	// DumpLaserToFile();
@@ -215,7 +212,8 @@ Filter(std::vector<Pose> &trajectory) {
 
 	 	prev_T << curr_T;
 
-	 	// Display
+	 	// Draw Particles and Display
+	 	DrawAllPaticles();
 	 	UpdateDisplay();
 
 	 	laser_idx++;		
@@ -624,7 +622,7 @@ TestMotionModel() {
 // {
 // }
 
-/** Updates the visualization of the map */
+/** Updates the visualization of the map img_ */
 void ParticleFilter::UpdateDisplay(){
 	// Convert Map to Mat (RGB)
 	// cv::Mat map_mat = cv::Mat(map_.size_x, map_.size_y, CV_64F, map_.prob);
@@ -635,13 +633,14 @@ void ParticleFilter::UpdateDisplay(){
 		// Draw One Particle with all rays
 
 	//DrawMap();
-	DrawAllPaticles();
+	// DrawAllPaticles();
 	
 	// Display Image
 	cv::imshow("ParticleFilter", img_);
 	cv::waitKey(0);
 }
 
+/* Overwrites img_ with image of the map */
 void ParticleFilter::DrawMap(){
 	/*TODO: Optimize this!! */
 	cv::Mat map_mat = cv::Mat(map_.size_y, map_.size_x, CV_64F, map_.prob);
@@ -650,6 +649,7 @@ void ParticleFilter::DrawMap(){
 	cv::cvtColor(map_mat, img_, CV_GRAY2RGB, 3);  
 }
 
+/* Draws all particles in img_*/
 void ParticleFilter::DrawAllPaticles(){
 	int row, col;
 	for (int i=0; i<particles_.size(); i++){
