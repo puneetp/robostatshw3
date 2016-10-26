@@ -206,15 +206,16 @@ Filter(std::vector<Pose> &trajectory) {
 	 		// std::cout << "Sensor model done\n";
 	 		//std::cout << " Particle being processed " <<i<<std::endl;
 	 	}
+	 	// Draw Particles and Display
+	 	DrawAllPaticles();
+	 	UpdateDisplay();
+		
 		// Importance sampling
 	 	ImportanceSampling(particles_);
 	 	// std::cout << "Importance sampling done\n";
 
 	 	prev_T << curr_T;
 
-	 	// Draw Particles and Display
-	 	DrawAllPaticles();
-	 	UpdateDisplay();
 
 	 	laser_idx++;		
 	}
@@ -274,10 +275,8 @@ double ParticleFilter::SensorModel( Particle & p , int laser_row_index)
    //...rest weight out the gray values if they come before.
    //Use the value to a) Map Reading of lasters b) Laser reading to fetch value c) The value fetched call this in loop NUM_LASER times
    //Return the sum of log of all the probabilties ( CHECK again here for what calculation has to be done.)
-	 
 	double map_directed_obstacle_range[NUM_LASER_VALS];
 	
-
 	//Initializing
 	int search_increment = RANGE_INCREMENT;
 
@@ -285,6 +284,8 @@ double ParticleFilter::SensorModel( Particle & p , int laser_row_index)
 
 	//initatied to -1 , if -1 don't use the value 
 	std::fill_n(map_directed_obstacle_range, NUM_LASER_VALS, -1); // to -1 
+
+	p.SetPose(p.GetPose().x, p.GetPose().y, 0);
 
 	//Running accross all lasers 	
 	//for ( int i =0 ; i<NUM_LASER;i=i+hop)
@@ -339,13 +340,14 @@ double ParticleFilter::SensorModel( Particle & p , int laser_row_index)
 					reached=true; // check this command
 
 					// Ray casting here
-					int start_pt_x = std::floor( p.GetPose().x + laser_x_offset );
-					int start_pt_y = std::floor( p.GetPose().y + laser_y_offset	);
-					int final_pt_x = std::floor( p.GetPose().x + rx + laser_x_offset );
-					int final_pt_y = p.GetPose().y + ry + laser_y_offset ;
-					std::cout<<"laser "<<i2<<" start_pt_x "<<start_pt_x<< " and y " <<start_pt_y<<" final_pt_x "<<final_pt_x<<" and y "<<final_pt_y<<std::endl;
-					// GetXYFromIndex(double &x, double &y, int row_st_y, int col)
-					// GetXYFromIndex(double &x, double &y, int row, int col)
+					double start_pt_x = p.GetPose().x + laser_x_offset;
+					double start_pt_y = p.GetPose().y + laser_y_offset;
+					double final_pt_x = p.GetPose().x + rx + laser_x_offset;
+					double final_pt_y = p.GetPose().y + ry + laser_y_offset;
+					std::cout << "Robot: (" <<  p.GetPose().x << "," << p.GetPose().y << ")" << std::endl;
+					// std::cout<<"laser "<<i2<<" start_pt_x "<<start_pt_x<< " and y " <<start_pt_y<<" final_pt_x "<<final_pt_x<<" and y "<<final_pt_y<<std::endl;
+					std::cout<<"Laser: " << i2 << " (" << start_pt_x << "," << start_pt_y << ") To (" 
+						<< final_pt_x << "," << final_pt_y <<  ")" <<std::endl;
 					DrawRay(start_pt_x,start_pt_y,final_pt_x,final_pt_y );
 					//DrawRay(600,600,5000,5000);
 					//std::cout<<"start_pt_x "<<start_pt_x<< " and y " <<start_pt_y<<" final_pt_x "<<final_pt_x<<" and y "<<final_pt_y<<std::endl;
@@ -653,32 +655,33 @@ void ParticleFilter::DrawMap(){
 void ParticleFilter::DrawAllPaticles(){
 	int row, col;
 	for (int i=0; i<particles_.size(); i++){
-
-		particles_[i].SetPose(particles_[i].GetPose().x + 100,
-			particles_[i].GetPose().y,
-			particles_[i].GetPose().theta);
+		std::cout << "DAP->Robot: (" <<  particles_[i].GetPose().x << "," << particles_[i].GetPose().y << ")" << std::endl;
 		DrawParticle(particles_[i]);
 	}
 }
 
 void ParticleFilter::DrawParticle(Particle particle){
 	int row, col, row1, col1;
-	const double r = 100; // length of orientation line
+	const double r = 200; // length of orientation line
 	GetIndexFromXY(particle.GetPose().x, particle.GetPose().y, row, col);
 	GetIndexFromXY(particle.GetPose().x + r*std::cos(particle.GetPose().theta), 
 		           particle.GetPose().y + r*std::sin(particle.GetPose().theta), row1, col1);
 	circle(img_, cv::Point(col, row), 2, cv::Scalar(0,255,0), 2);
+	std::cout << "DP->Robot: (" <<  particle.GetPose().x << "," << particle.GetPose().y << ")" << std::endl;
 	DrawRay(particle.GetPose().x, 
 		    particle.GetPose().y, 
 		    particle.GetPose().x + r*std::cos(particle.GetPose().theta), 
 		    particle.GetPose().y + r*std::sin(particle.GetPose().theta));
+	std::cout << "DP->Robot: (" <<  particle.GetPose().x << "," << particle.GetPose().y << ")" << std::endl;
 }
 
 /* Draws a line from (x,y) to (x1,y1) LH*/
 void ParticleFilter::DrawRay(double x, double y, double x1, double y1){
 	int row, col, row1, col1;
+	// std::cout << "Drawing Ray (x,y): (" << x << "," << y << ")" << std::endl;
 	GetIndexFromXY(x, y, row, col);
 	GetIndexFromXY(x1, y1, row1, col1);
+	// std::cout << "Drawing Ray (col,row): (" << col << "," << row << ")" << std::endl;
 	cv::line(img_, cv::Point(col, row), cv::Point(col1, row1), cv::Scalar(0,0,255));
 
 }
