@@ -653,10 +653,6 @@ void ParticleFilter::DrawMap(){
 void ParticleFilter::DrawAllPaticles(){
 	int row, col;
 	for (int i=0; i<particles_.size(); i++){
-
-		particles_[i].SetPose(particles_[i].GetPose().x + 100,
-			particles_[i].GetPose().y,
-			particles_[i].GetPose().theta);
 		DrawParticle(particles_[i]);
 	}
 }
