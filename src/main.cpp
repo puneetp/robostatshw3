@@ -10,11 +10,12 @@
 using namespace std;
 
 int main (int argc , char ** argv )
-
 {
 	 std::vector<Pose> traj;
-	 ParticleFilter pf(5*1e3, 0, 1e-4, 0, 30);
-	 pf.ReadData("../data/robotdata1.log", "../data/wean.dat");
+ 	// ParticleFilter pf(1e2, 0, 0.1, 0, 15);
+	 ParticleFilter pf(1e4, 0, 1e-4, 0, 15, "../data/robotdata1.log", "../data/wean.dat");
+	 // ParticleFilter pf(10, 0, 1e-4, 0, 15, "../data/robotdata1.log", "../data/wean.dat");
+	 // pf.ReadData("../data/robotdata1.log", "../data/wean.dat");
 	 pf.Filter(traj);
 	 // pf.TestMotionModel();
 
