@@ -19,13 +19,16 @@
 
 // Laser params
 #define THRESHOLD_FOR_OBSTACLE 				0.9
-#define MIN_PROBABILITY_VALUE				0.1
+#define MIN_PROBABILITY_VALUE				0.2
 #define LASER_HOP 							4 // How many lasers do we want to hop in search space Minimum is one
-#define EXP_MULTIPLIER						1.0
-#define GAUSSIAN_MULTIPLIER					70
-#define AT_WORLDS_END						2000
+#define EXP_MULTIPLIER						0.3
+#define EXP_MULTIPLIER_OUTSIDE				.5
+#define GAUSSIAN_MULTIPLIER					100
+#define AT_WORLDS_END						900
 #define EOR_PROB  							0.3	
-#define RANGE_INCREMENT						5
+#define RANGE_INCREMENT						3
+
+//plot(x,.25*exp(-.03*x)+100*normpdf(x,500,50)+.3*(y)) where y is 1 after EOR
 
 /** Constructor */
 ParticleFilter::
@@ -325,6 +328,14 @@ double ParticleFilter::SensorModel( Particle & p , int laser_row_index)
 					map_directed_obstacle_range[i2]=r;				
 					// std::cout <<"get p.GetPose().x=" <<p.GetPose().x<<" x="<<x<<" y="<<y<< " value of p.GetPose().y="<<p.GetPose().y << " i2=" <<i2 << " r="<<r<<" value of x is= "<<x<< " y=" <<y << " obstacle_prob=" << obstacle_prob<<std::endl;
 					reached=true; // check this command
+
+					// Ray casting here
+					int start_pt_x = std::floor( p.GetPose().x + laser_x_offset );
+					int start_pt_y = std::floor( p.GetPose().y + laser_y_offset	);
+					int final_pt_x = std::floor( p.GetPose().x + rx + laser_x_offset );
+					int final_pt_y = p.GetPose().y + ry + laser_y_offset ;
+					//DrawRay(start_pt_x,start_pt_y,final_pt_x,final_pt_y );
+
 				}
 				else if(obstacle_prob == -1) {
 					// Stop searching when we hit unknown space, and discard this laser angle
@@ -351,7 +362,7 @@ double ParticleFilter::SensorModel( Particle & p , int laser_row_index)
 
 	for (int j =0 ; j < NUM_LASER_VALS ; j=j+hop)
 	{
-		//if (!(std::abs(per_particle_sensor_probability_vector[j] - (-1)) < 1e-4)) 
+		if (!(std::abs(per_particle_sensor_probability_vector[j] - (-1)) < 1e-4)) 
 		{
 		// if(per_particle_sensor_probability_vector[j] != -1) {
 
@@ -412,7 +423,7 @@ void ParticleFilter::Sensor_models_laser_PDF_vector( double map_directed_obstacl
 			normal_value = GAUSSIAN_MULTIPLIER * normal_value1st_half* normal_value2nd_half ;	
 
 			// From Exponential Function of PDF , since its falling , it e^(-x)
-			exp_value=std::exp(-EXP_MULTIPLIER * fetch_laser_value_at_this_point);
+			exp_value=EXP_MULTIPLIER_OUTSIDE*std::exp(-EXP_MULTIPLIER * fetch_laser_value_at_this_point);
 
 			// End of range magic
 			if(fetch_laser_value_at_this_point > AT_WORLDS_END) {
