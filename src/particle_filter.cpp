@@ -17,13 +17,13 @@
 #define UNOCCUPIED_TOL						1e-2
 
 // Laser params
-#define THRESHOLD_FOR_OBSTACLE 				0.9
+#define THRESHOLD_FOR_OBSTACLE 				0.6
 #define MIN_PROBABILITY_VALUE				0.2
 #define LASER_HOP 							20 // How many lasers do we want to hop in search space Minimum is one
 #define EXP_MULTIPLIER						0.3
 #define EXP_MULTIPLIER_OUTSIDE				.5
 #define GAUSSIAN_MULTIPLIER					100
-#define AT_WORLDS_END						900
+#define AT_WORLDS_END						800
 #define EOR_PROB  							0.3	
 #define RANGE_INCREMENT						3
 
@@ -186,16 +186,16 @@ Filter(std::vector<Pose> &trajectory) {
 	while(laser_idx < 100)
 	{
 		DrawMap();
-		std::cout <<" ############################################################# " << std::endl;
+		//std::cout <<" ############################################################# " << std::endl;
 		std::cout << "Reading Laser from databes with index : " << laser_idx << "\n";
 		std::cout <<" ############################################################# " << std::endl;
 		// Read log file. Let's stick with laser for now?
 		curr_T = ComputeTransform(laser_data_.data(laser_idx, 0), laser_data_.data(laser_idx, 1), laser_data_.data(laser_idx, 2));
 		// Apply motion and sensor model on all particles
 	 	for(int i = 0; i < num_particles_; ++i) {
-	 		std::cout <<" -------- " << std::endl;
-			std::cout << "Paticle number: " << i << "\n";
-			std::cout << " -------- "<< std::endl;
+	 	// 	std::cout <<" -------- " << std::endl;
+			// std::cout << "Particle number: " << i << "\n";
+			// std::cout << " -------- "<< std::endl;
 
 			// motion model
 			MotionModel(particles_[i], prev_T, curr_T);
@@ -213,7 +213,7 @@ Filter(std::vector<Pose> &trajectory) {
 	 	prev_T << curr_T;
 
 	 	// Draw Particles and Display
-	 	DrawAllPaticles();
+	 	DrawAllParticles();
 	 	UpdateDisplay();
 
 	 	laser_idx++;		
@@ -288,6 +288,10 @@ double ParticleFilter::SensorModel( Particle & p , int laser_row_index)
 
 	//Running accross all lasers 	
 	//for ( int i =0 ; i<NUM_LASER;i=i+hop)
+
+	//TODO: CHECK IF POINT IS OUT SIDE BOUND GIVE IT A LOW WEIGHT if (p.Getpose().x > 8000 && <map_.size_x*map_.resolution   ) && (row_y<map_.size_y))  &&  ((col_x >= 0) && ( row_y >= 0)) )
+
+
 	for ( int i2 =0 ; i2<NUM_LASER_VALS ;i2=i2+hop) //NUM_LASER-START_LASER_INDEX
 	{
 		int col_x=0;  // col
@@ -343,7 +347,7 @@ double ParticleFilter::SensorModel( Particle & p , int laser_row_index)
 					int start_pt_y = std::floor( p.GetPose().y + laser_y_offset	);
 					int final_pt_x = std::floor( p.GetPose().x + rx + laser_x_offset );
 					int final_pt_y = p.GetPose().y + ry + laser_y_offset ;
-					std::cout<<"laser "<<i2<<" start_pt_x "<<start_pt_x<< " and y " <<start_pt_y<<" final_pt_x "<<final_pt_x<<" and y "<<final_pt_y<<std::endl;
+					//std::cout<<"laser "<<i2<<" start_pt_x "<<start_pt_x<< " and y " <<start_pt_y<<" final_pt_x "<<final_pt_x<<" and y "<<final_pt_y<<std::endl;
 					// GetXYFromIndex(double &x, double &y, int row_st_y, int col)
 					// GetXYFromIndex(double &x, double &y, int row, int col)
 					DrawRay(start_pt_x,start_pt_y,final_pt_x,final_pt_y );
@@ -384,6 +388,11 @@ double ParticleFilter::SensorModel( Particle & p , int laser_row_index)
 			weight_log += std::log(per_particle_sensor_probability_vector[j]);
 			entered_the_loop=true;
 		}
+		else
+		{
+			weight_log += std::log(MIN_PROBABILITY_VALUE);
+		}
+
 		//std::cout <<" weight_log " <<weight_log<< "  per_particle_sensor_probability_vector[j]" <<per_particle_sensor_probability_vector[j] <<std::endl;
 
 	}
@@ -395,8 +404,8 @@ double ParticleFilter::SensorModel( Particle & p , int laser_row_index)
 	//std::cout <<"weight_log total "<< weight_log <<" final weight_value "<<weight_value <<std::endl;
 
 	// Update particle's weight
-	//p.SetWeight(weight_value);
-	p.SetWeight(1.0);
+	p.SetWeight(weight_value);
+	//p.SetWeight(1.0);
 
 	return weight_value;
 
@@ -461,6 +470,12 @@ void ParticleFilter::Sensor_models_laser_PDF_vector( double map_directed_obstacl
 			// 	std::cout <<" i="<<i<<" laser_mean="<< laser_mean << " fetch_laser_value_at_this_point=" << fetch_laser_value_at_this_point<< " normal_value=" <<normal_value   <<" n1="<<normal_value1st_half<<" n2="<<normal_value2nd_half << " exp_value=" <<exp_value<<" max_step1=" <<max_step1<<" per_particle_sensor_probability_vector[]=" <<per_particle_sensor_probability_vector[i] << std::endl;
 
 		}
+		else
+		{
+			per_particle_sensor_probability_vector[i]=MIN_PROBABILITY_VALUE;
+		}
+
+
 	}
 
 }
@@ -633,7 +648,7 @@ void ParticleFilter::UpdateDisplay(){
 		// Draw One Particle with all rays
 
 	//DrawMap();
-	// DrawAllPaticles();
+	// DrawAllParticles();
 	
 	// Display Image
 	cv::imshow("ParticleFilter", img_);
@@ -650,7 +665,7 @@ void ParticleFilter::DrawMap(){
 }
 
 /* Draws all particles in img_*/
-void ParticleFilter::DrawAllPaticles(){
+void ParticleFilter::DrawAllParticles(){
 	int row, col;
 	for (int i=0; i<particles_.size(); i++){
 		DrawParticle(particles_[i]);

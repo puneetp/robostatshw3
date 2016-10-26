@@ -109,7 +109,7 @@ public:
 	
 	void DrawMap();
 
-	void DrawAllPaticles();
+	void DrawAllParticles();
 
 	void DrawRay(double x, double y, double x1, double y1);
 	
