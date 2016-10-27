@@ -18,16 +18,16 @@
 
 // Laser params
 #define THRESHOLD_FOR_OBSTACLE 				0.6
-#define MIN_PROBABILITY_VALUE				0.2
+#define MIN_PROBABILITY_VALUE				0.1
 #define LASER_HOP 							10 // How many lasers do we want to hop in search space Minimum is one
-#define EXP_MULTIPLIER						0.3
-#define EXP_MULTIPLIER_OUTSIDE				.5
-#define GAUSSIAN_MULTIPLIER					100
+#define EXP_MULTIPLIER						0.2
+#define EXP_MULTIPLIER_OUTSIDE				.1
+#define GAUSSIAN_MULTIPLIER					300
 #define AT_WORLDS_END						800
 #define EOR_PROB  							0.3	
 #define RANGE_INCREMENT						6
-#define DRAW_LASER_HOP						60
-#define MOTION_THETA_SIGMA					.0001
+#define DRAW_LASER_HOP						30
+#define MOTION_THETA_SIGMA					.001
 
 //plot(x,.25*exp(-.03*x)+100*normpdf(x,500,50)+.3*(y)) where y is 1 after EOR
 
@@ -106,7 +106,7 @@ MotionModel(Particle &p, Pose p1, Pose p2) {
 
 	Pose p_new;
 	// Add some 4oise
-	double alpha1=1e-4, alpha2=1e-4, alpha3=1e-2, alpha4=1e-2;
+	double alpha1=1e-3, alpha2=1e-3, alpha3=7, alpha4=1;
 	std::random_device rd;
 	std::default_random_engine generator(rd());
 	std::normal_distribution<double> delta_rot1_noise(delta_rot1, alpha1*std::abs(delta_rot1) + alpha2*delta_trans);
@@ -470,7 +470,7 @@ double ParticleFilter::SensorModel( Particle & p , int laser_row_index)
 					// GetXYFromIndex(double &x, double &y, int row_st_y, int col)
 					// GetXYFromIndex(double &x, double &y, int row, int col)
 					if((i2%DRAW_LASER_HOP)==0){
-						DrawRay(start_pt_x,start_pt_y,final_pt_x,final_pt_y );
+						// DrawRay(start_pt_x,start_pt_y,final_pt_x,final_pt_y );
 					}
 					//DrawRay(600,600,5000,5000);
 					//std::cout<<"start_pt_x "<<start_pt_x<< " and y " <<start_pt_y<<" final_pt_x "<<final_pt_x<<" and y "<<final_pt_y<<std::endl;
@@ -652,8 +652,8 @@ InitParticles() {
 
 void ParticleFilter::
 HackInitParticles() {
-	int seed_row(390), seed_col(460), num_thetas(20);
-	int window_size(50);
+	int seed_row(390), seed_col(400), num_thetas(10);
+	int window_size(20);
 	double x, y, theta;
 	num_particles_ = 0;
 
@@ -661,8 +661,8 @@ HackInitParticles() {
 	std::default_random_engine generator(rd());
 	std::uniform_real_distribution<double> real_distribution(0.0, 2*M_PI);
 
-	for(int i = seed_row - window_size; i < seed_row + window_size; i += 5) {
-		for(int j = seed_col - window_size; j < seed_col + window_size; j += 5) {
+	for(int i = seed_row - window_size; i < seed_row + window_size; i += 3) {
+		for(int j = seed_col - window_size; j < seed_col + window_size; j += 3) {
 			for(int k = 1; k <= num_thetas; ++k) {
 				Particle p;
 				// y = i * map_.resolution + map_.resolution/2;
