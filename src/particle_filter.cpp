@@ -99,6 +99,33 @@ MotionModel(Particle &p, Eigen::Matrix3d T1, Eigen::Matrix3d T2) {
 }
 
 void ParticleFilter::
+MotionModel(Particle &p, Pose p1, Pose p2) {
+	double delta_rot1 = std::atan2(p2.y - p1.y, p2.x - p1.x) - p1.theta;
+	double delta_trans = std::sqrt(std::pow(p2.y - p1.y,2) + std::pow(p2.x - p1.x, 2));
+	double delta_rot2 = p2.theta - p1.theta - delta_rot1;
+
+	Pose p_new;
+	// Add some 4oise
+	double alpha1=1e-4, alpha2=1e-4, alpha3=1e-2, alpha4=1e-2;
+	std::random_device rd;
+	std::default_random_engine generator(rd());
+	std::normal_distribution<double> delta_rot1_noise(delta_rot1, alpha1*std::abs(delta_rot1) + alpha2*delta_trans);
+	std::normal_distribution<double> delta_trans_noise(delta_trans,
+			alpha3*delta_trans + alpha4*(std::abs(delta_rot1)+std::abs(delta_rot2)));
+	std::normal_distribution<double> delta_rot2_noise(delta_rot2, alpha1*std::abs(delta_rot2)+alpha2*delta_trans);
+
+	double delta_rot1_hat = delta_rot1_noise(generator);
+	double delta_trans_hat = delta_trans_noise(generator);
+	double delta_rot2_hat = delta_rot2_noise(generator);
+	
+	p_new.x = p.GetPose().x + delta_trans_hat * cos(p.GetPose().theta + delta_rot1_hat);
+	p_new.y = p.GetPose().y + delta_trans_hat * sin(p.GetPose().theta + delta_rot1_hat);
+	p_new.theta = p.GetPose().theta + delta_rot1_hat + delta_rot2_hat;
+	
+	p.SetPose(p_new.x, p_new.y, p_new.theta);
+}
+
+void ParticleFilter::
 ReadData(char* data_file, char *map_file) {
 	// read laser and odom data
 	laser_data_.rows = 0;
@@ -226,6 +253,77 @@ Filter(std::vector<Pose> &trajectory) {
 		prev_pose.x = curr_pose.x;
 		prev_pose.y = curr_pose.y;
 		prev_pose.theta = curr_pose.theta;
+
+	 	// Draw Particles and Display
+	 	DrawAllParticles();
+	 	UpdateDisplay();
+
+	 	laser_idx++;		
+	}
+}
+
+void ParticleFilter::
+Filter_new(std::vector<Pose> &trajectory) {
+	int laser_idx(0), odom_idx(0);
+	Eigen::Matrix3d prev_T, curr_T;
+	Pose prev_pose, curr_pose;
+	// Preprocess map
+	PreprocessMap();
+
+	// Initialize particles
+	// InitParticles();
+	HackInitParticles();
+
+	// double x,y;
+	// GetXYFromIndex(x,y,390,460);	
+	// particles_[0].SetPose(x,y,0);
+	
+	DumpParticlesToFile();
+	// DumpOdomToFile();
+	// DumpLaserToFile();
+
+	// UpdateDisplay();
+
+	// // Initialize with first odom entry
+	prev_T = ComputeTransform(laser_data_.data(0, 0), laser_data_.data(0, 1), laser_data_.data(0, 2));
+	prev_pose.x = laser_data_.data(0, 0);
+	prev_pose.y = laser_data_.data(0, 1);
+	prev_pose.theta = laser_data_.data(0, 2);
+
+	// ++odom_idx;
+	++laser_idx;
+
+	while(laser_idx < 10000)
+	{
+		DrawMap();
+		//std::cout <<" ############################################################# " << std::endl;
+		std::cout << "Reading Laser from databes with index : " << laser_idx << "\n";
+		std::cout <<" ############################################################# " << std::endl;
+		// Read log file. Let's stick with laser for now?
+		curr_pose.x = laser_data_.data(laser_idx, 0);
+		curr_pose.y = laser_data_.data(laser_idx, 1);
+		curr_pose.theta = laser_data_.data(laser_idx, 2);
+
+		// Apply motion and sensor model on all particles
+	 	for(int i = 0; i < num_particles_; ++i) {
+	 	// 	std::cout <<" -------- " << std::endl;
+			// std::cout << "Particle number: " << i << "\n";
+			// std::cout << " -------- "<< std::endl;
+
+			// motion model
+			MotionModel(particles_[i], prev_pose, curr_pose);
+			// std::cout << "Motion model done\n";
+
+			// sensor model
+	 		SensorModel(particles_[i], laser_idx);	 		
+	 		// std::cout << "Sensor model done\n";
+	 		// std::cout << " Particle being processed " <<i<<std::endl;
+	 	}
+		// Importance sampling
+	 	ImportanceSampling(particles_);
+	 	// std::cout << "Importance sampling done\n";
+
+	 	prev_pose = curr_pose;
 
 	 	// Draw Particles and Display
 	 	DrawAllParticles();
@@ -675,7 +773,7 @@ void ParticleFilter::UpdateDisplay(){
 	
 	// Display Image
 	cv::imshow("ParticleFilter", img_);
-	cv::waitKey(5);
+	cv::waitKey(10);
 }
 
 /* Overwrites img_ with image of the map */

@@ -13,7 +13,6 @@ using namespace std;
 int main (int argc , char ** argv )
 {
 
-
 	 std::vector<Pose> traj;
  	// ParticleFilter pf(1e2, 0, 0.1, 0, 15);
 	//ParticleFilter pf(5*1e2, 0, .01 , 0, 50); // puneet
@@ -21,7 +20,9 @@ int main (int argc , char ** argv )
 	 ParticleFilter pf(5000, 0, 1e-2, 0, 200, "../data/robotdata1.log", "../data/wean.dat");
 	 // pf.ReadData("../data/robotdata1.log", "../data/wean.dat");
 
-	 pf.Filter(traj);
+	 // pf.Filter(traj);
+	 pf.Filter_new(traj);
+	 // pf.Filter(traj);
 	 // pf.TestRotMotionModel();
 	 // pf.TestMotionModel();
 	 return (0);
