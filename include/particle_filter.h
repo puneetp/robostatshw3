@@ -57,6 +57,9 @@ public:
 	/** Updates the position of particle p given previous and current odom readings */ 
 	void MotionModel(Particle &p, Eigen::Matrix3d T1, Eigen::Matrix3d T2);
 
+	/** Updates the position of particle p given previous and current odom readings using relative frames*/ 
+	void RelativeMotionModel(Particle &p, Eigen::Matrix3d T1, Eigen::Matrix3d T2);
+	
 	/** Computes the transformation matrix given x, y theta. Used by the motion model. */
 	Eigen::Matrix3d ComputeTransform(double x, double y, double theta);
 
@@ -65,6 +68,7 @@ public:
 	*/
 	Eigen::Matrix3d NoisyTransform(Eigen::Matrix3d T1, Eigen::Matrix3d T2);
 
+	Eigen::Matrix3d NoisyRelativeTransform(Eigen::Matrix3d T1, Eigen::Matrix3d T2);
 
 	/**Sensor mode is core fuction which calculates the weights of the particles
 	* it takes in information of particle location , the map of the world and the laser reading at that place

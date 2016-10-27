@@ -85,12 +85,48 @@ NoisyTransform(Eigen::Matrix3d T1, Eigen::Matrix3d T2) {
 	return ComputeTransform(dx, dy, dtheta);
 }
 
+Eigen::Matrix3d ParticleFilter::
+NoisyRelativeTransform(Eigen::Matrix3d T1, Eigen::Matrix3d T2) {
+	// return T2 * T1.inverse();
+
+	// Get displacements
+	Eigen::Matrix3d dT =  T1.inverse() * T2;
+	double dx = dT(0, 2);
+	double dy = dT(1, 2);
+	double dtheta = std::atan2(-dT(0, 1), dT(0, 0));
+
+	// Add some noise
+	std::random_device rd;
+	std::default_random_engine generator(rd());
+	std::normal_distribution<double> dist_x(dx, motion_sigma_);
+	std::normal_distribution<double> dist_y(dy, motion_sigma_);
+	std::normal_distribution<double> dist_theta(dtheta, motion_sigma_);
+
+	// build noisy transform matrix65
+	dx = dist_x(generator);
+	dy = dist_y(generator);
+	dtheta = dist_theta(generator);
+
+	return ComputeTransform(dx, dy, dtheta);
+}
+
 void ParticleFilter::
 MotionModel(Particle &p, Eigen::Matrix3d T1, Eigen::Matrix3d T2) {
 	Eigen::Matrix3d new_T, old_T;
 	old_T << p.GetT();
 
 	new_T = NoisyTransform(T1, T2) * old_T;
+
+	p.SetT(new_T);
+	p.SetPose(new_T(0, 2), new_T(1, 2), std::atan2(new_T(1, 0), new_T(0, 0)));
+}
+
+void ParticleFilter::
+RelativeMotionModel(Particle &p, Eigen::Matrix3d T1, Eigen::Matrix3d T2) {
+	Eigen::Matrix3d new_T, old_T;
+	old_T << p.GetT();
+
+	new_T =  old_T * NoisyTransform(T1, T2);
 
 	p.SetT(new_T);
 	p.SetPose(new_T(0, 2), new_T(1, 2), std::atan2(new_T(1, 0), new_T(0, 0)));
@@ -169,8 +205,8 @@ Filter(std::vector<Pose> &trajectory) {
 	PreprocessMap();
 
 	// Initialize particles
-	InitParticles();
-	// HackInitParticles();
+	// InitParticles();
+	HackInitParticles();
 
 	DumpParticlesToFile();
 	// DumpOdomToFile();
@@ -183,7 +219,7 @@ Filter(std::vector<Pose> &trajectory) {
 	// ++odom_idx;
 	++laser_idx;
 
-	while(laser_idx < 100)
+	while(laser_idx < 10000)
 	{
 		DrawMap();
 		//std::cout <<" ############################################################# " << std::endl;
@@ -198,7 +234,8 @@ Filter(std::vector<Pose> &trajectory) {
 			// std::cout << " -------- "<< std::endl;
 
 			// motion model
-			MotionModel(particles_[i], prev_T, curr_T);
+			// MotionModel(particles_[i], prev_T, curr_T);
+			RelativeMotionModel(particles_[i], prev_T, curr_T);
 			// std::cout << "Motion model done\n";
 
 			// sensor model
