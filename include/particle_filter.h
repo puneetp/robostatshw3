@@ -51,6 +51,8 @@ public:
 	/** Initializes particles on the map */
 	void InitParticles();
 
+	void InitParticlesMoreThetas();
+
 	void HackInitParticles();
 
 	/** Preprocesses the map. Builds a list of cells with occupancy probability = 0 **/

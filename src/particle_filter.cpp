@@ -15,6 +15,7 @@
 #define NUM_LASER							187
 #define LASER_POD_FORWARD_OFFSET   			25 // This is in 
 #define UNOCCUPIED_TOL						1e-2
+#define NUM_INIT_THETAS						10
 
 // Laser params
 #define THRESHOLD_FOR_OBSTACLE 				0.6
@@ -199,7 +200,8 @@ Filter(std::vector<Pose> &trajectory) {
 
 	// Initialize particles
 	// InitParticles();
-	HackInitParticles();
+	// HackInitParticles();
+	InitParticlesMoreThetas();
 
 	DumpParticlesToFile();
 	// DumpOdomToFile();
@@ -647,6 +649,36 @@ InitParticles() {
 		}
 
 		particles_.push_back(p);
+	}
+}
+
+void ParticleFilter::
+InitParticlesMoreThetas() {
+	std::random_device rd;
+	std::default_random_engine generator(rd());
+	std::uniform_int_distribution<int> disc_distribution(0, unoccupied_list_.size()-1);
+	std::uniform_real_distribution<double> real_distribution(0.0, 2*M_PI);
+
+	int cell_idx;
+	double theta, x, y;
+
+	int particle_count = 0;
+	while(particle_count < num_particles_) {
+		// randomly choose an unoccupied cell to place this particle in
+		cell_idx = disc_distribution(generator);
+
+		for(int i = 1; i <= NUM_INIT_THETAS; ++i) {
+			Particle p;
+			theta = real_distribution(generator);
+			GetXYFromIndex(x, y, unoccupied_list_[cell_idx].row, unoccupied_list_[cell_idx].col);
+			p.SetPose(x, y, theta);
+			p.SetT(ComputeTransform(x, y, theta));
+			particles_.push_back(p);
+			++particle_count;
+			if(particle_count >= num_particles_) {
+				break;
+			}
+		}
 	}
 }
 
