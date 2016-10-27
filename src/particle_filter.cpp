@@ -25,7 +25,9 @@
 #define GAUSSIAN_MULTIPLIER					100
 #define AT_WORLDS_END						800
 #define EOR_PROB  							0.3	
-#define RANGE_INCREMENT						3
+#define RANGE_INCREMENT						6
+#define DRAW_LASER_HOP						60
+#define MOTION_THETA_SIGMA					.0001
 
 //plot(x,.25*exp(-.03*x)+100*normpdf(x,500,50)+.3*(y)) where y is 1 after EOR
 
@@ -281,6 +283,8 @@ double ParticleFilter::SensorModel( Particle & p , int laser_row_index)
 	//Initializing
 	int search_increment = RANGE_INCREMENT;
 
+	double weight_value=0.0;
+
 	int hop=LASER_HOP;// How many lasers do we want to hop in search space Minimum is one
 
 	//initatied to -1 , if -1 don't use the value 
@@ -290,7 +294,11 @@ double ParticleFilter::SensorModel( Particle & p , int laser_row_index)
 	//for ( int i =0 ; i<NUM_LASER;i=i+hop)
 
 	//TODO: CHECK IF POINT IS OUT SIDE BOUND GIVE IT A LOW WEIGHT if (p.Getpose().x > 8000 && <map_.size_x*map_.resolution   ) && (row_y<map_.size_y))  &&  ((col_x >= 0) && ( row_y >= 0)) )
-
+	//TODO: CHECK IF POINT IS OUT SIDE BOUND GIVE IT A LOW WEIGHT 
+	if ( (p.GetPose().x > map_.size_x*map_.resolution) || (p.GetPose().y > map_.size_y*map_.resolution) || (p.GetPose().x < 0) || (p.GetPose().y < 0) )
+	{
+		return weight_value=0.0;
+	}
 
 	for ( int i2 =0 ; i2<NUM_LASER_VALS ;i2=i2+hop) //NUM_LASER-START_LASER_INDEX
 	{
@@ -350,7 +358,9 @@ double ParticleFilter::SensorModel( Particle & p , int laser_row_index)
 					//std::cout<<"laser "<<i2<<" start_pt_x "<<start_pt_x<< " and y " <<start_pt_y<<" final_pt_x "<<final_pt_x<<" and y "<<final_pt_y<<std::endl;
 					// GetXYFromIndex(double &x, double &y, int row_st_y, int col)
 					// GetXYFromIndex(double &x, double &y, int row, int col)
-					DrawRay(start_pt_x,start_pt_y,final_pt_x,final_pt_y );
+					if((i2%DRAW_LASER_HOP)==0){
+						DrawRay(start_pt_x,start_pt_y,final_pt_x,final_pt_y );
+					}
 					//DrawRay(600,600,5000,5000);
 					//std::cout<<"start_pt_x "<<start_pt_x<< " and y " <<start_pt_y<<" final_pt_x "<<final_pt_x<<" and y "<<final_pt_y<<std::endl;
 					//cv::waitKey(0);
@@ -399,7 +409,7 @@ double ParticleFilter::SensorModel( Particle & p , int laser_row_index)
 	if(!entered_the_loop)
 		weight_log=std::numeric_limits<double>::lowest();
 
-	double weight_value= std::exp(weight_log);  //actual weight
+	weight_value= std::exp(weight_log);  //actual weight
 
 	//std::cout <<"weight_log total "<< weight_log <<" final weight_value "<<weight_value <<std::endl;
 
@@ -652,7 +662,7 @@ void ParticleFilter::UpdateDisplay(){
 	
 	// Display Image
 	cv::imshow("ParticleFilter", img_);
-	cv::waitKey(0);
+	cv::waitKey(30);
 }
 
 /* Overwrites img_ with image of the map */
