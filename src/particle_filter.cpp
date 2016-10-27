@@ -20,15 +20,15 @@
 // Laser params
 #define THRESHOLD_FOR_OBSTACLE 				0.6
 #define MIN_PROBABILITY_VALUE				0.1
-#define LASER_HOP 							10 // How many lasers do we want to hop in search space Minimum is one
+#define LASER_HOP 							20 // How many lasers do we want to hop in search space Minimum is one
 
 #define EXP_MULTIPLIER						0.2
 #define EXP_MULTIPLIER_OUTSIDE				.1
-#define GAUSSIAN_MULTIPLIER					400
+#define GAUSSIAN_MULTIPLIER					700
 
 #define AT_WORLDS_END						800
 #define EOR_PROB  							0.3	
-#define RANGE_INCREMENT						6
+#define RANGE_INCREMENT						15
 #define DRAW_LASER_HOP						30
 #define MOTION_THETA_SIGMA					.004
 
