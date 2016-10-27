@@ -19,7 +19,7 @@
 // Laser params
 #define THRESHOLD_FOR_OBSTACLE 				0.6
 #define MIN_PROBABILITY_VALUE				0.2
-#define LASER_HOP 							20 // How many lasers do we want to hop in search space Minimum is one
+#define LASER_HOP 							10 // How many lasers do we want to hop in search space Minimum is one
 #define EXP_MULTIPLIER						0.3
 #define EXP_MULTIPLIER_OUTSIDE				.5
 #define GAUSSIAN_MULTIPLIER					100
@@ -171,8 +171,8 @@ Filter(std::vector<Pose> &trajectory) {
 	PreprocessMap();
 
 	// Initialize particles
-	InitParticles();
-	// HackInitParticles();
+	// InitParticles();
+	HackInitParticles();
 
 	DumpParticlesToFile();
 	// DumpOdomToFile();
@@ -675,7 +675,7 @@ void ParticleFilter::UpdateDisplay(){
 	
 	// Display Image
 	cv::imshow("ParticleFilter", img_);
-	cv::waitKey(30);
+	cv::waitKey(5);
 }
 
 /* Overwrites img_ with image of the map */
@@ -748,6 +748,12 @@ RotationMatrix(double theta) {
 
 void ParticleFilter::
 RotMotionModel(Particle &p, Pose p1, Pose p2) {
+	std::random_device rd;
+	std::default_random_engine generator(rd());
+	std::normal_distribution<double> dist_x(0, motion_sigma_);
+	std::normal_distribution<double> dist_y(0, motion_sigma_);
+	std::normal_distribution<double> dist_theta(0, 1e-4);
+
 	double dx = p2.x - p1.x;
 	double dy = p2.y - p1.y;
 	Eigen::Matrix2d robot_rot = RotationMatrix(p2.theta);
@@ -755,9 +761,9 @@ RotMotionModel(Particle &p, Pose p1, Pose p2) {
 	Eigen::Vector2d vec_robot = robot_rot.transpose() * vec;
 	Eigen::Matrix2d particle_rot = RotationMatrix(p.GetPose().theta);
 	Eigen::Vector2d vec_map = particle_rot * vec_robot;
-	p.SetPose(p.GetPose().x + vec_map(0),
-		p.GetPose().y + vec_map(1),
-		p.GetPose().theta + p2.theta - p1.theta );
+	p.SetPose(p.GetPose().x + vec_map(0) + dist_x(generator),
+		p.GetPose().y + vec_map(1)  + dist_y(generator),
+		p.GetPose().theta + p2.theta - p1.theta + dist_theta(generator));
 }
 
 void ParticleFilter::
