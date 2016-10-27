@@ -103,8 +103,8 @@ MotionModel(Particle &p, Pose p1, Pose p2) {
 	double delta_rot2 = p2.theta - p1.theta - delta_rot1;
 
 	Pose p_new;
-	// Add some noise
-	double alpha1=1, alpha2=1, alpha3=1, alpha4=1;
+	// Add some 4oise
+	double alpha1=1e-4, alpha2=1e-4, alpha3=1e-2, alpha4=1e-2;
 	std::random_device rd;
 	std::default_random_engine generator(rd());
 	std::normal_distribution<double> delta_rot1_noise(delta_rot1, alpha1*std::abs(delta_rot1) + alpha2*delta_trans);
@@ -259,6 +259,10 @@ Filter_new(std::vector<Pose> &trajectory) {
 	// InitParticles();
 	HackInitParticles();
 
+	// double x,y;
+	// GetXYFromIndex(x,y,390,460);	
+	// particles_[0].SetPose(x,y,0);
+	
 	DumpParticlesToFile();
 	// DumpOdomToFile();
 	// DumpLaserToFile();
@@ -634,8 +638,8 @@ HackInitParticles() {
 	std::default_random_engine generator(rd());
 	std::uniform_real_distribution<double> real_distribution(0.0, 2*M_PI);
 
-	for(int i = seed_row - window_size; i < seed_row + window_size; i += 25) {
-		for(int j = seed_col - window_size; j < seed_col + window_size; j += 25) {
+	for(int i = seed_row - window_size; i < seed_row + window_size; i += 5) {
+		for(int j = seed_col - window_size; j < seed_col + window_size; j += 5) {
 			for(int k = 1; k <= num_thetas; ++k) {
 				Particle p;
 				// y = i * map_.resolution + map_.resolution/2;
@@ -746,7 +750,7 @@ void ParticleFilter::UpdateDisplay(){
 	
 	// Display Image
 	cv::imshow("ParticleFilter", img_);
-	cv::waitKey(0);
+	cv::waitKey(10);
 }
 
 /* Overwrites img_ with image of the map */
