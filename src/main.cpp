@@ -18,7 +18,7 @@ int main (int argc , char ** argv )
 	//ParticleFilter pf(5*1e2, 0, .01 , 0, 50); // puneet
 	 // ParticleFilter pf(5*1e2, 0, 1e-4, 0, 30, "../data/robotdata1.log", "../data/wean.dat");
 
-	 ParticleFilter pf(15000, 0, 6, 0, 200, "../data/robotdata1.log", "../data/wean.dat");
+	 ParticleFilter pf(80000, 0, 6, 0, 200, "../data/robotdata1.log", "../data/wean.dat");
 
 	// ParticleFilter pf(1e4, 0, 1e-2, 0, 200, "../data/robotdata1.log", "../data/wean.dat");
 
