@@ -29,7 +29,7 @@ The following sections outline our approach in implementing the particle filter.
 
 \subsection{Motion Model}
 \begin{enumerate}
-\item Given subsequent odometry readings $\left(x,y,\theta\right)_{1}$ at $t_{1}, t_{2}$ and $\left(x,y,\theta\right)_{2}$, we first compute the translation in the odometry frame:
+\item Given subsequent odometry readings $\left(x,y,\theta\right)_{1}$ and $\left(x,y,\theta\right)_{2}$ at $t_{1}, t_{2}$, we first compute the translation in the odometry frame:
 \begin{align*}
 \begin{bmatrix}
 \Delta x \\
@@ -71,7 +71,19 @@ R_{r}^{-1}
 \end{align*}
 Similarly, the difference in $\theta$ is computed according to:
 \begin{align*}
-\Delta \theta = \theta_{2} - \theta_{1}
+\Delta \theta = \theta_{2} - \theta_{1} + \mathcal{N}\left( 0, \sigma_{angle} \right)
+\end{align*}
+
+\item We rotate the displacement from the particle frame to the map frame:
+\begin{align*}
+\begin{bmatrix}
+\Delta x \\
+\Delta y
+\end{bmatrix}_{m} = 
+R_{p} * \begin{bmatrix}
+\Delta x \\
+\Delta y
+\end{bmatrix}_{p}
 \end{align*}
 
 \item Finally, we update the particle's pose in the map frame:
@@ -89,7 +101,7 @@ y
 \Delta y
 \end{bmatrix}_{m}
 \end{align*}
-and $\theta_{m,t} = \theta_{m,t} + \Delta \theta$
+and $\theta_{m,t} = \theta_{m,t-1} + \Delta \theta$
 \end{enumerate}
 
 \end{document}
