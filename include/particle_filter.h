@@ -32,6 +32,7 @@ public:
 	void DumpOdomToFile();
 	void DumpLaserToFile();
 	void TestMotionModel();
+	void TestRotMotionModel();
 
 	/* ****************** Member variables ********************************* */
 	int num_particles_;
@@ -64,6 +65,10 @@ public:
 	* Used by the motion model to update a particle's pose.
 	*/
 	Eigen::Matrix3d NoisyTransform(Eigen::Matrix3d T1, Eigen::Matrix3d T2);
+
+	Eigen::Matrix2d RotationMatrix(double theta);
+
+	void RotMotionModel(Particle &p, Pose p1, Pose p2);
 
 
 	/**Sensor mode is core fuction which calculates the weights of the particles

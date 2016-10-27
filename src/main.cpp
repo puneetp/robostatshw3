@@ -22,6 +22,7 @@ int main (int argc , char ** argv )
 	 // pf.ReadData("../data/robotdata1.log", "../data/wean.dat");
 
 	 pf.Filter(traj);
+	 // pf.TestRotMotionModel();
 	 // pf.TestMotionModel();
 	 return (0);
 }
