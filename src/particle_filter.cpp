@@ -18,16 +18,16 @@
 
 // Laser params
 #define THRESHOLD_FOR_OBSTACLE 				0.6
-#define MIN_PROBABILITY_VALUE				0.2
+#define MIN_PROBABILITY_VALUE				0.1
 #define LASER_HOP 							10 // How many lasers do we want to hop in search space Minimum is one
-#define EXP_MULTIPLIER						0.3
-#define EXP_MULTIPLIER_OUTSIDE				.5
-#define GAUSSIAN_MULTIPLIER					100
+#define EXP_MULTIPLIER						0.2
+#define EXP_MULTIPLIER_OUTSIDE				.1
+#define GAUSSIAN_MULTIPLIER					400
 #define AT_WORLDS_END						800
 #define EOR_PROB  							0.3	
 #define RANGE_INCREMENT						6
-#define DRAW_LASER_HOP						60
-#define MOTION_THETA_SIGMA					.0001
+#define DRAW_LASER_HOP						30
+#define MOTION_THETA_SIGMA					.004
 
 //plot(x,.25*exp(-.03*x)+100*normpdf(x,500,50)+.3*(y)) where y is 1 after EOR
 
@@ -171,8 +171,8 @@ Filter(std::vector<Pose> &trajectory) {
 	PreprocessMap();
 
 	// Initialize particles
-	// InitParticles();
-	HackInitParticles();
+	 InitParticles();
+	//HackInitParticles();
 
 	DumpParticlesToFile();
 	// DumpOdomToFile();
@@ -183,6 +183,7 @@ Filter(std::vector<Pose> &trajectory) {
 	prev_pose.x = laser_data_.data(0, 0);
 	prev_pose.y = laser_data_.data(0, 1);
 	prev_pose.theta = laser_data_.data(0, 2);
+
 
 	// // Initialize with first odom entry
 	prev_T = ComputeTransform(laser_data_.data(0, 0), laser_data_.data(0, 1), laser_data_.data(0, 2));
@@ -554,7 +555,7 @@ InitParticles() {
 
 void ParticleFilter::
 HackInitParticles() {
-	int seed_row(390), seed_col(460), num_thetas(20);
+	int seed_row(390), seed_col(420), num_thetas(20);
 	int window_size(50);
 	double x, y, theta;
 	num_particles_ = 0;
@@ -752,7 +753,7 @@ RotMotionModel(Particle &p, Pose p1, Pose p2) {
 	std::default_random_engine generator(rd());
 	std::normal_distribution<double> dist_x(0, motion_sigma_);
 	std::normal_distribution<double> dist_y(0, motion_sigma_);
-	std::normal_distribution<double> dist_theta(0, 1e-4);
+	std::normal_distribution<double> dist_theta(0, MOTION_THETA_SIGMA);
 
 	double dx = p2.x - p1.x;
 	double dy = p2.y - p1.y;
