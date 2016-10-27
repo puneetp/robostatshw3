@@ -26,6 +26,7 @@ public:
 	*/
 	void Filter(std::vector<Pose> &trajectory);
 
+	void Filter_new(std::vector<Pose> &trajectory); 
 
 	/************************ Test code ****************************************/
 	void DumpParticlesToFile();
@@ -56,6 +57,9 @@ public:
 
 	/** Updates the position of particle p given previous and current odom readings */ 
 	void MotionModel(Particle &p, Eigen::Matrix3d T1, Eigen::Matrix3d T2);
+
+	/** Prob Rob Book Motion Model*/
+	void MotionModel(Particle &p, Pose p1, Pose p2);
 
 	/** Computes the transformation matrix given x, y theta. Used by the motion model. */
 	Eigen::Matrix3d ComputeTransform(double x, double y, double theta);
