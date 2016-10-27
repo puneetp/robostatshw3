@@ -223,7 +223,7 @@ Filter(std::vector<Pose> &trajectory) {
 	prev_T = ComputeTransform(laser_data_.data(0, 0), laser_data_.data(0, 1), laser_data_.data(0, 2));
 	// ++odom_idx;
 	++laser_idx;
-
+	iteration_ = laser_idx;
 	while(laser_idx < laser_data_.rows)
 	{
 		DrawMap();
@@ -267,6 +267,7 @@ Filter(std::vector<Pose> &trajectory) {
 	 	UpdateDisplay();
 
 	 	laser_idx++;		
+		iteration_ = laser_idx;
 	}
 }
 
@@ -344,9 +345,14 @@ Filter_new(std::vector<Pose> &trajectory) {
 /* Regenerates the particles_ according to weights
  */
 void ParticleFilter::ImportanceSampling(std::vector<Particle> &particles , int verbose){
-	
+		
 	// Compute vector of cumulative weights
-	const unsigned int num_particles = particles.size();
+	unsigned int num_particles = particles.size();
+	if(iteration_>3){
+		num_particles = 5000;
+		num_particles_ = 5000;
+	}
+
 	std::vector<double> cum_weights(num_particles+1, 0.0);
 	for (int i=1; i<num_particles+1; i++){
 		cum_weights[i] = cum_weights[i-1] + std::fabs(particles[i-1].GetWeight());

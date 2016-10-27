@@ -46,6 +46,7 @@ public:
 	std::vector<MapCell> unoccupied_list_;			// List of map cells known to be empty with certainty 
 	cv::Mat img_;
 	cv::Mat img_map_;
+	int iteration_;
 	/* ********************** Member functions ***************************** */
 
 	/** Initializes particles on the map */
