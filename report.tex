@@ -27,6 +27,9 @@ We make use of the following notation in this report.
 \section{Approach}
 The following sections outline our approach in implementing the particle filter.
 
+\subsection{Initialization}
+We initialize the particles with uniformly drawn random positions and orientation in the unoccupied grid cells of the map, i.e. cells that are known to be empty with probability $1$.
+
 \subsection{Motion Model}
 \begin{enumerate}
 \item Given subsequent odometry readings $\left(x,y,\theta\right)_{1}$ and $\left(x,y,\theta\right)_{2}$ at $t_{1}, t_{2}$, we first compute the translation in the odometry frame:
@@ -103,5 +106,35 @@ y
 \end{align*}
 and $\theta_{m,t} = \theta_{m,t-1} + \Delta \theta$
 \end{enumerate}
+
+\subsection{Sensor Model}
+
+\subsection{Resampling}
+
+\section{Parameters and Tuning}
+This section describes the parameters we've used in our particle filter, their values, and how we tuned them.
+
+\subsection{Initialization}
+\begin{itemize}
+\item $\text{num\_particles}$: We use 80000 particles in our implementation. This seemed to be a suitable number of particles that covered the range of possible initial positions and orientations fairly well.
+\end{itemize}
+
+\subsection{Motion Model}
+\begin{itemize}
+\item $\sigma_{motion}, \sigma_{theta}$: Standard deviation of the gaussian used to add noise to motion model updates. We used a value of 6 for $\sigma_{motion}$ and $0.004$ for $\sigma_{theta}$ after tuning to ensure that our particles covered the span of possible motion updates at each time step, given that the odometry data was noisy.
+\end{itemize}
+
+\subsection{Sensor Model}
+\begin{itemize}
+\item $\sigma_{laser}$: The standard deviation of the gaussian used to generate one part of $P\left( z|x \right)$. A value of $200$ was found to be suitable for dealing with sensor noise after testing with particles initialized in different regions of the map.
+\item $\text{MIN\_PROBABILITY\_VALUE}$: The minimum probability assigned to $P\left( z|x \right)$. We used a value of $0.1$ to avoid extremely small weights for laser readings that did not correspond to the map.
+\item $\text{LASER\_HOP}$: This defines the sampling density of laser readings. We examine laser readings at intervals of $10$ degrees to avoid large processing times.
+\item $\text{AT\_WORLDS\_END}$: The range beyond which we consider an end-of-range situation for a particular laser reading. We found a value of $700$ to be suitable.
+\item $\text{EOR\_PROB}$: The value of $P\left( z|x \right)$ assigned to laser readings that fall beyond $\text{AT\_WORLDS\_END}$. A value of $0.3$ lets us assign non-trivial weights to laser readings that are not erroneous, but just happened to fall on unoccupied regions of the map.
+\item $\text{GAUSSIAN\_MULTIPLIER}$: The multiplier applied to the gaussian portion of the sensor model. A value of 700 allows us to achieve sufficiently high probability values for laser readings that correspond well with the map.
+\item $\text{EXP\_MULTIPLIER}$: A multiplier of $0.2$ lets us downweight the exponential portion of the model used to model objects that are very close to the robot.
+\end{itemize}
+
+\subsection{Resampling}
 
 \end{document}
