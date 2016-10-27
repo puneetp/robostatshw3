@@ -16,5 +16,80 @@
 \usepackage{tikz}
 
 \begin{document}
+\section{Notation}
+We make use of the following notation in this report.
+\begin{itemize}
+\item $r,p,o,m$ in subscript: Robot, particle, odometry and map frames, respectively
+\item $R_{r,o}$: Rotation matrix expressing the orientation of the robot frame $r$ in the odometry frame $o$.
+\item $R_{p,m}$: Rotation matrix expressing the orientation of the particle frame $p$ in the map frame $m$.
+\end{itemize}
+
+\section{Approach}
+The following sections outline our approach in implementing the particle filter.
+
+\subsection{Motion Model}
+\begin{enumerate}
+\item Given subsequent odometry readings $\left(x,y,\theta\right)_{1}$ at $t_{1}, t_{2}$ and $\left(x,y,\theta\right)_{2}$, we first compute the translation in the odometry frame:
+\begin{align*}
+\begin{bmatrix}
+\Delta x \\
+\Delta y
+\end{bmatrix}_{o} = 
+\begin{bmatrix}
+x_{2} - x_{1} \\
+y_{2} - y_{1}
+\end{bmatrix}
+\end{align*} 
+
+\item We then rotate the displacements to the robot frame (computed using odometry values):
+\begin{align*}
+\begin{bmatrix}
+\Delta x \\
+\Delta y
+\end{bmatrix}_{r} = 
+R_{r}^{-1}
+\begin{bmatrix}
+\Delta x \\
+\Delta y
+\end{bmatrix}_{o} 
+\end{align*}
+
+\item We add some noise to get corresponding displacements in the particle frame.
+\begin{align*}
+\begin{bmatrix}
+\Delta x \\
+\Delta y
+\end{bmatrix}_{p} = 
+\begin{bmatrix}
+\Delta x \\
+\Delta y
+\end{bmatrix}_{r} +
+\begin{bmatrix}
+\mathcal{N}\left( 0, \sigma_{motion} \right) \\
+\mathcal{N}\left( 0, \sigma_{motion} \right)
+\end{bmatrix}_{}
+\end{align*}
+Similarly, the difference in $\theta$ is computed according to:
+\begin{align*}
+\Delta \theta = \theta_{2} - \theta_{1}
+\end{align*}
+
+\item Finally, we update the particle's pose in the map frame:
+\begin{align*}
+\begin{bmatrix}
+x \\
+y
+\end{bmatrix}_{m,t} = 
+\begin{bmatrix}
+x \\
+y
+\end{bmatrix}_{m,t-1} +
+\begin{bmatrix}
+\Delta x \\
+\Delta y
+\end{bmatrix}_{m}
+\end{align*}
+and $\theta_{m,t} = \theta_{m,t} + \Delta \theta$
+\end{enumerate}
 
 \end{document}
