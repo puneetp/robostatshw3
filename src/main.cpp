@@ -22,6 +22,8 @@ int main (int argc , char ** argv )
 
 	 // pf.Filter(traj);
 	 pf.Filter_new(traj);
+	 // pf.Filter(traj);
+	 // pf.TestRotMotionModel();
 	 // pf.TestMotionModel();
 	 return (0);
 }

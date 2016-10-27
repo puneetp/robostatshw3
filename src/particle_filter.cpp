@@ -25,7 +25,9 @@
 #define GAUSSIAN_MULTIPLIER					100
 #define AT_WORLDS_END						800
 #define EOR_PROB  							0.3	
-#define RANGE_INCREMENT						3
+#define RANGE_INCREMENT						6
+#define DRAW_LASER_HOP						60
+#define MOTION_THETA_SIGMA					.0001
 
 //plot(x,.25*exp(-.03*x)+100*normpdf(x,500,50)+.3*(y)) where y is 1 after EOR
 
@@ -204,29 +206,39 @@ Filter(std::vector<Pose> &trajectory) {
 	// DumpLaserToFile();
 
 	// UpdateDisplay();
+	Pose prev_pose, curr_pose;
+	prev_pose.x = laser_data_.data(0, 0);
+	prev_pose.y = laser_data_.data(0, 1);
+	prev_pose.theta = laser_data_.data(0, 2);
 
 	// // Initialize with first odom entry
 	prev_T = ComputeTransform(laser_data_.data(0, 0), laser_data_.data(0, 1), laser_data_.data(0, 2));
 	// ++odom_idx;
 	++laser_idx;
 
-	while(laser_idx < 100)
+	while(laser_idx < laser_data_.rows)
 	{
 		DrawMap();
 		//std::cout <<" ############################################################# " << std::endl;
 		std::cout << "Reading Laser from databes with index : " << laser_idx << "\n";
 		std::cout <<" ############################################################# " << std::endl;
 		// Read log file. Let's stick with laser for now?
-		curr_T = ComputeTransform(laser_data_.data(laser_idx, 0), laser_data_.data(laser_idx, 1), laser_data_.data(laser_idx, 2));
+		// curr_T = ComputeTransform(laser_data_.data(laser_idx, 0), laser_data_.data(laser_idx, 1), laser_data_.data(laser_idx, 2));
 		// Apply motion and sensor model on all particles
+
+		curr_pose.x = laser_data_.data(laser_idx, 0);
+		curr_pose.y = laser_data_.data(laser_idx, 1);
+		curr_pose.theta = laser_data_.data(laser_idx, 2);
+
 	 	for(int i = 0; i < num_particles_; ++i) {
 	 	// 	std::cout <<" -------- " << std::endl;
 			// std::cout << "Particle number: " << i << "\n";
 			// std::cout << " -------- "<< std::endl;
 
 			// motion model
-			MotionModel(particles_[i], prev_T, curr_T);
+			// MotionModel(particles_[i], prev_T, curr_T);
 			// std::cout << "Motion model done\n";
+			RotMotionModel(particles_[i], prev_pose, curr_pose);
 
 			// sensor model
 	 		SensorModel(particles_[i], laser_idx);	 		
@@ -237,7 +249,10 @@ Filter(std::vector<Pose> &trajectory) {
 	 	ImportanceSampling(particles_);
 	 	// std::cout << "Importance sampling done\n";
 
-	 	prev_T << curr_T;
+	 	// prev_T << curr_T;
+		prev_pose.x = curr_pose.x;
+		prev_pose.y = curr_pose.y;
+		prev_pose.theta = curr_pose.theta;
 
 	 	// Draw Particles and Display
 	 	DrawAllParticles();
@@ -379,6 +394,8 @@ double ParticleFilter::SensorModel( Particle & p , int laser_row_index)
 	//Initializing
 	int search_increment = RANGE_INCREMENT;
 
+	double weight_value=0.0;
+
 	int hop=LASER_HOP;// How many lasers do we want to hop in search space Minimum is one
 
 	//initatied to -1 , if -1 don't use the value 
@@ -388,7 +405,11 @@ double ParticleFilter::SensorModel( Particle & p , int laser_row_index)
 	//for ( int i =0 ; i<NUM_LASER;i=i+hop)
 
 	//TODO: CHECK IF POINT IS OUT SIDE BOUND GIVE IT A LOW WEIGHT if (p.Getpose().x > 8000 && <map_.size_x*map_.resolution   ) && (row_y<map_.size_y))  &&  ((col_x >= 0) && ( row_y >= 0)) )
-
+	//TODO: CHECK IF POINT IS OUT SIDE BOUND GIVE IT A LOW WEIGHT 
+	if ( (p.GetPose().x > map_.size_x*map_.resolution) || (p.GetPose().y > map_.size_y*map_.resolution) || (p.GetPose().x < 0) || (p.GetPose().y < 0) )
+	{
+		return weight_value=0.0;
+	}
 
 	for ( int i2 =0 ; i2<NUM_LASER_VALS ;i2=i2+hop) //NUM_LASER-START_LASER_INDEX
 	{
@@ -448,7 +469,9 @@ double ParticleFilter::SensorModel( Particle & p , int laser_row_index)
 					//std::cout<<"laser "<<i2<<" start_pt_x "<<start_pt_x<< " and y " <<start_pt_y<<" final_pt_x "<<final_pt_x<<" and y "<<final_pt_y<<std::endl;
 					// GetXYFromIndex(double &x, double &y, int row_st_y, int col)
 					// GetXYFromIndex(double &x, double &y, int row, int col)
-					DrawRay(start_pt_x,start_pt_y,final_pt_x,final_pt_y );
+					if((i2%DRAW_LASER_HOP)==0){
+						DrawRay(start_pt_x,start_pt_y,final_pt_x,final_pt_y );
+					}
 					//DrawRay(600,600,5000,5000);
 					//std::cout<<"start_pt_x "<<start_pt_x<< " and y " <<start_pt_y<<" final_pt_x "<<final_pt_x<<" and y "<<final_pt_y<<std::endl;
 					//cv::waitKey(0);
@@ -497,7 +520,7 @@ double ParticleFilter::SensorModel( Particle & p , int laser_row_index)
 	if(!entered_the_loop)
 		weight_log=std::numeric_limits<double>::lowest();
 
-	double weight_value= std::exp(weight_log);  //actual weight
+	weight_value= std::exp(weight_log);  //actual weight
 
 	//std::cout <<"weight_log total "<< weight_log <<" final weight_value "<<weight_value <<std::endl;
 
@@ -810,4 +833,65 @@ GetIndexFromXY(double x, double y, int &row, int &col) {
 	if(row >= map_.size_y) {
 		row = map_.size_y - 1;
 	}
+}
+
+Eigen::Matrix2d ParticleFilter::
+RotationMatrix(double theta) {
+	Eigen::Matrix2d rot;
+	rot << std::cos(theta), -std::sin(theta),
+		std::sin(theta), std::cos(theta);
+
+	return rot;
+}
+
+void ParticleFilter::
+RotMotionModel(Particle &p, Pose p1, Pose p2) {
+	double dx = p2.x - p1.x;
+	double dy = p2.y - p1.y;
+	Eigen::Matrix2d robot_rot = RotationMatrix(p2.theta);
+	Eigen::Vector2d vec; vec << dx, dy;
+	Eigen::Vector2d vec_robot = robot_rot.transpose() * vec;
+	Eigen::Matrix2d particle_rot = RotationMatrix(p.GetPose().theta);
+	Eigen::Vector2d vec_map = particle_rot * vec_robot;
+	p.SetPose(p.GetPose().x + vec_map(0),
+		p.GetPose().y + vec_map(1),
+		p.GetPose().theta + p2.theta - p1.theta );
+}
+
+void ParticleFilter::
+TestRotMotionModel() {
+	FILE *f = fopen("particle_traj.csv", "w");
+	Pose pose;
+	int odom_idx = 0;
+	Pose prev_pose, curr_pose;
+
+	// Initialize particle to the first odom reading
+	Particle p;
+	p.SetPose(odom_data_.data(0, 0), odom_data_.data(0, 1), odom_data_.data(0, 2)+0.2);
+	num_particles_ = 1;
+	std::vector<Particle> temp;
+	temp.push_back(p);
+	particles_ = temp;
+
+	prev_pose.x = odom_data_.data(0, 0);
+	prev_pose.y = odom_data_.data(0, 1);
+	prev_pose.theta = odom_data_.data(0, 2);
+
+	++odom_idx;
+
+	while(odom_idx <= odom_data_.rows-1) {
+		curr_pose.x = odom_data_.data(odom_idx, 0);
+		curr_pose.y = odom_data_.data(odom_idx, 1);
+		curr_pose.theta = odom_data_.data(odom_idx, 2);
+		RotMotionModel(p, prev_pose, curr_pose);
+		pose = p.GetPose();
+		fprintf(f, "%lf,%lf,%lf\n", pose.x, pose.y, pose.theta);
+		prev_pose.x = curr_pose.x;
+		prev_pose.y = curr_pose.y;
+		prev_pose.theta = curr_pose.theta;
+		++odom_idx;
+		// UpdateDisplay();
+	}
+
+	fclose(f);
 }
