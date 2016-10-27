@@ -22,7 +22,7 @@
 #define LASER_HOP 							10 // How many lasers do we want to hop in search space Minimum is one
 #define EXP_MULTIPLIER						0.3
 #define EXP_MULTIPLIER_OUTSIDE				.5
-#define GAUSSIAN_MULTIPLIER					100
+#define GAUSSIAN_MULTIPLIER					300
 #define AT_WORLDS_END						800
 #define EOR_PROB  							0.3	
 #define RANGE_INCREMENT						6
@@ -752,7 +752,7 @@ RotMotionModel(Particle &p, Pose p1, Pose p2) {
 	std::default_random_engine generator(rd());
 	std::normal_distribution<double> dist_x(0, motion_sigma_);
 	std::normal_distribution<double> dist_y(0, motion_sigma_);
-	std::normal_distribution<double> dist_theta(0, 1e-4);
+	std::normal_distribution<double> dist_theta(0, 1e-3);
 
 	double dx = p2.x - p1.x;
 	double dy = p2.y - p1.y;
