@@ -36,7 +36,7 @@ public:
 	void TestRotMotionModel();
 
 	/* ****************** Member variables ********************************* */
-	int num_particles_;
+	int num_particles_, original_num_particles_;
 	std::vector<Particle> particles_;
 	map_type map_;
 	LaserData laser_data_;
@@ -47,6 +47,9 @@ public:
 	cv::Mat img_;
 	cv::Mat img_map_;
 	int iteration_;
+	double slow_avg_cum_weight_;
+	double fast_avg_cum_weight_;
+
 	/* ********************** Member functions ***************************** */
 
 	/** Initializes particles on the map */

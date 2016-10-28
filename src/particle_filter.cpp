@@ -39,6 +39,7 @@ ParticleFilter::
 ParticleFilter(int num_particles, double motion_mean, double motion_sigma,
 	double laser_mean, double laser_sigma, char* data_file, char *map_file) {
 	num_particles_ = num_particles;
+	original_num_particles_ = num_particles;
 	motion_mean_ = motion_mean;
 	motion_sigma_ = motion_sigma;
 	laser_mean_ = laser_mean;
@@ -51,6 +52,8 @@ ParticleFilter(int num_particles, double motion_mean, double motion_sigma,
 	map_mat.convertTo(map_mat, CV_32F);
 	cv::cvtColor(map_mat, img_map_, CV_GRAY2RGB, 3);  
 	// cv::transpose(img_map_, img_map_);
+	slow_avg_cum_weight_ = 0;
+	fast_avg_cum_weight_ = 0;
 }
 
 
@@ -207,7 +210,6 @@ Filter(std::vector<Pose> &trajectory) {
 	// HackInitParticles();
 	InitParticlesMoreThetas();
 
-
 	DumpParticlesToFile();
 	// DumpOdomToFile();
 	// DumpLaserToFile();
@@ -257,6 +259,15 @@ Filter(std::vector<Pose> &trajectory) {
 	 	ImportanceSampling(particles_);
 	 	// std::cout << "Importance sampling done\n";
 
+
+	 	if (fast_avg_cum_weight_/slow_avg_cum_weight_ < 1e-2)
+	 	{
+	 		std::cout << "!!!!!!!!!!!!!!!!!!!!!! Reinitializing Filter!!!!!!!!!!!!!!!!!!!!!!!!!!!" << std::endl;
+	 		num_particles_ = original_num_particles_;
+			InitParticlesMoreThetas();
+			iteration_ = 0;
+	 	}
+
 	 	// prev_T << curr_T;
 		prev_pose.x = curr_pose.x;
 		prev_pose.y = curr_pose.y;
@@ -266,8 +277,12 @@ Filter(std::vector<Pose> &trajectory) {
 	 	DrawAllParticles();
 	 	UpdateDisplay();
 
+	 	if(laser_idx>195){
+	 		cv::waitKey(0);
+	 	}
+
 	 	laser_idx++;		
-		iteration_ = laser_idx;
+		iteration_++;
 	}
 }
 
@@ -348,7 +363,7 @@ void ParticleFilter::ImportanceSampling(std::vector<Particle> &particles , int v
 		
 	// Compute vector of cumulative weights
 	unsigned int num_particles = particles.size();
-	if(iteration_>3){
+	if (iteration_>3){
 		num_particles = 5000;
 		num_particles_ = 5000;
 	}
@@ -364,8 +379,13 @@ void ParticleFilter::ImportanceSampling(std::vector<Particle> &particles , int v
 	std::default_random_engine generator(rd());
 	std::uniform_real_distribution<float> distribution(0.0, cum_weights[num_particles]);
 
+	fast_avg_cum_weight_ = 0.7*fast_avg_cum_weight_ + (1 - 0.7)*cum_weights[num_particles_];
+	slow_avg_cum_weight_ = 0.98*slow_avg_cum_weight_ + (1 - 0.98)*cum_weights[num_particles_];
+	double ratio =  fast_avg_cum_weight_ / slow_avg_cum_weight_;
 	std::cout << "cum weights: " << cum_weights[num_particles] << "\n";
-	
+	std::cout << "fast cum weights: " << fast_avg_cum_weight_ << "\n";
+	std::cout << "slow cum weights: " << slow_avg_cum_weight_ << "\n";
+	std::cout << "Ratio: " << ratio << "\n";
 	if (verbose){
 		std::cout << "cum_weights = ";
 		for(auto it = cum_weights.begin(); it != cum_weights.end(); it++){
@@ -484,7 +504,7 @@ double ParticleFilter::SensorModel( Particle & p , int laser_row_index)
 					// GetXYFromIndex(double &x, double &y, int row_st_y, int col)
 					// GetXYFromIndex(double &x, double &y, int row, int col)
 					if((i2%DRAW_LASER_HOP)==0){
-						DrawRay(start_pt_x,start_pt_y,final_pt_x,final_pt_y );
+						// DrawRay(start_pt_x,start_pt_y,final_pt_x,final_pt_y );
 					}
 					//DrawRay(600,600,5000,5000);
 					//std::cout<<"start_pt_x "<<start_pt_x<< " and y " <<start_pt_y<<" final_pt_x "<<final_pt_x<<" and y "<<final_pt_y<<std::endl;
@@ -664,8 +684,10 @@ InitParticles() {
 	}
 }
 
+// This function also works with kidnap robot problem other inits do not!!
 void ParticleFilter::
 InitParticlesMoreThetas() {
+	particles_.clear();
 	std::random_device rd;
 	std::default_random_engine generator(rd());
 	std::uniform_int_distribution<int> disc_distribution(0, unoccupied_list_.size()-1);
